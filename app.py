@@ -450,7 +450,7 @@ rodape_html = f"""
     </div>
     <div style="display: flex; align-items: center; justify-content: flex-end; margin-top: 30px;">
         <img src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Logo_FGV_-_Funda%C3%A7%C3%A3o_Getulio_Vargas.png" height="20" style="margin-right: 5px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Logo_fapesp_em_preto.svg/1280px-Logo_fapesp_em_preto.svg.png" height="25">
+        <img src="https://fapesp.br/assets/img/logo-simple2.png" height="25">
     </div>
 </div>
 <hr style="border-top: 1px solid rgba(120,120,120,0.25); margin: 20px 0;">
