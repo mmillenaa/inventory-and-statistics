@@ -47,6 +47,13 @@ with col_idioma:
 
 def traduzir(texto_pt):
     dicionario = {
+        "Audiovisual (AUD)": {"English": "Audiovisual (AUD)", "Español": "Audiovisual (AUD)"},
+        "Filmográfico (FLG)": {"English": "Filmographic (FLG)", "Español": "Filmográfico (FLG)"},
+        "Filme (FME)": {"English": "Film (FME)", "Español": "Filme (FME)"},
+        "Notícia (NOT)": {"English": "News (NOT)", "Español": "Noticia (NOT)"},
+        "Relatório (REL)": {"English": "Report (REL)", "Español": "Relatorio (REL)"},
+        "Nato-digital (NDG)": {"English": "Born-digital (NDG)", "Español": "Nato-digital (NDG)"},
+        "Não determinado (NDT)": {"English": "Undetermined (NDT)", "Español": "No determinado (NDT)"},
         "Inventário e estatística das coleções do GPDVE": {"English": "Inventory and statistics of GPDVE collections", "Español": "Inventario y estadística de las colecciones del GPDVE"},
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
@@ -244,23 +251,52 @@ with aba_inventario:
     cols_int = ['Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro', 'Arquivo_origem']
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
+    # Dicionário expandido com os novos termos catalogados
     dicionario_siglas = {
-        "FOT": traduzir("Fotografia (FOT)"), "PLN": traduzir("Planta cartográfica (PLN)"), "DGZ": traduzir("Digitalizado (DGZ)"),
-        "ICO": traduzir("Iconográfico (ICO)"), "MTO": traduzir("Meio magnético/ótico (MTO)"), "TXT": traduzir("Textual (TXT)")
+        "FOT": traduzir("Fotografia (FOT)"),
+        "PLN": traduzir("Planta cartográfica (PLN)"),
+        "DGZ": traduzir("Digitalizado (DGZ)"),
+        "ICO": traduzir("Iconográfico (ICO)"),
+        "MTO": traduzir("Meio magnético/ótico (MTO)"),
+        "TXT": traduzir("Textual (TXT)"),
+        "AUD": traduzir("Audiovisual (AUD)"),
+        "FLG": traduzir("Filmográfico (FLG)"),
+        "FME": traduzir("Filme (FME)"),
+        "NOT": traduzir("Notícia (NOT)"),
+        "REL": traduzir("Relatório (REL)"),
+        "NDG": traduzir("Nato-digital (NDG)"),
+        "NDT": traduzir("Não determinado (NDT)")
     }
 
     filtros_selecionados = {}
     if cols_exist:
         l_cols = st.columns(len(cols_exist))
+        
+        # Mapeia as seleções ativas em tempo real para o cruzamento de dados
+        selecoes_ativas = {c: st.session_state.get(f"f_{c}", []) for c in cols_exist}
+        
         for i, col in enumerate(cols_exist):
             with l_cols[i]:
-                valores = [v for v in df_consolidado[col].dropna().unique() if "Unnamed" not in str(v)]
+                # Filtra a base temporária usando os critérios de todas as OUTRAS colunas
+                df_opcoes = df_consolidado.copy()
+                for o_col, sel_vals in selecoes_ativas.items():
+                    if o_col != col and sel_vals:
+                        df_opcoes = df_opcoes[df_opcoes[o_col].isin(sel_vals)]
+                
+                # Extrai apenas os valores que possuem correspondência real e matemática
+                valores = [v for v in df_opcoes[col].dropna().unique() if "Unnamed" not in str(v)]
+                
                 filtros_selecionados[col] = st.multiselect(
-                    f"{col}", sorted(valores), key=f"f_{col}", format_func=lambda x: dicionario_siglas.get(str(x), str(x))
+                    f"{col}", 
+                    sorted(valores), 
+                    key=f"f_{col}",
+                    format_func=lambda x: dicionario_siglas.get(str(x), str(x))
                 )
 
+    # Aplica as restrições finais ao conjunto de dados que abastece as tabelas e indicadores
     for col, sel in filtros_selecionados.items():
-        if sel: df_filtrado = df_filtrado[df_filtrado[col].isin(sel)]
+        if sel: 
+            df_filtrado = df_filtrado[df_filtrado[col].isin(sel)]
 
     st.subheader(traduzir("Indicadores"))
     col1, col2, col3 = st.columns(3)
