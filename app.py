@@ -14,7 +14,8 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 def check_password():
     def password_entered():
-        if st.session_state["password"] == "gpdvefgv123":
+        # O programa agora busca a senha no cofre blindado da nuvem, e não no texto
+        if st.session_state["password"] == st.secrets["senha_acervo"]:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
         else:
