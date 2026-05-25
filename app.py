@@ -10,35 +10,47 @@ import requests
 st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPDVE")
 
 # ============================================================
-# CONTROLES SUPERIORES (DIREITA) E IDIOMA
+# SISTEMA DE SEGURANÇA (PORTA TRANCADA)
 # ============================================================
-# Deixamos apenas a coluna de espaço vazio (8.5) e a coluna do idioma (1.5)
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == "gpdvefgv123":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.markdown("<h3 style='text-align: center; font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>Acesso restrito - GPDVE</h3>", unsafe_allow_html=True)
+        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.markdown("<h3 style='text-align: center; font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>Acesso restrito - GPDVE</h3>", unsafe_allow_html=True)
+        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="password")
+        st.error("Senha incorreta. Acesso negado.")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
+# ============================================================
+# CONTROLES SUPERIORES E IDIOMA
+# ============================================================
 col_espaco, col_idioma = st.columns([8.5, 1.5])
 
 with col_idioma:
     st.caption("Idioma / Language")
-    idioma = st.selectbox(
-        "Seletor de idioma", 
-        ["Português", "English", "Español"], 
-        label_visibility="collapsed"
-    )
+    idioma = st.selectbox("Seletor de idioma", ["Português", "English", "Español"], label_visibility="collapsed")
 
 def traduzir(texto_pt):
     dicionario = {
-        "Inventário e estatística das coleções do GPDVE": {
-            "English": "Inventory and Statistics of GPDVE Collections",
-            "Español": "Inventario y estadística de las colecciones del GPDVE"
-        },
-        "Gestão e visualização transversal de metadados arquivísticos.": {
-            "English": "Management and transversal visualisation of archival metadata.",
-            "Español": "Gestión y visualización transversal de metadatos archivísticos."
-        },
-        "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {
-            "English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.",
-            "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."
-        },
+        "Inventário e estatística das coleções do GPDVE": {"English": "Inventory and statistics of GPDVE collections", "Español": "Inventario y estadística de las colecciones del GPDVE"},
+        "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
+        "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {"English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.", "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."},
         "Observatório de bases publicadas pelo GPDVE no Dataverse": {"English": "Observatory of databases published by GPDVE on Dataverse", "Español": "Observatorio de bases de datos publicadas por GPDVE en Dataverse"},
         "Busca avançada": {"English": "Advanced search", "Español": "Búsqueda avanzada"},
         "Pesquisar termo nas planilhas (ex: criança, portão, costura)": {"English": "Search term in spreadsheets (e.g., child, gate, sewing)", "Español": "Buscar término en hojas de cálculo (ej: niño, puerta, costura)"},
@@ -57,7 +69,7 @@ def traduzir(texto_pt):
         "Distribuição estatística": {"English": "Statistical distribution", "Español": "Distribución estadística"},
         "Visualização detalhada": {"English": "Detailed view", "Español": "Vista detallada"},
         "Instrumentos de pesquisa": {"English": "Research instruments", "Español": "Instrumentos de investigación"},
-        "Gerar INVENTÁRIO DO ACERVO": {"English": "Generate COLLECTION INVENTORY", "Español": "Generar INVENTARIO DEL ACERVO"},
+        "Gerar inventário do acervo": {"English": "Generate collection inventory", "Español": "Generar inventario del acervo"},
         "Acervo documental digitalizado": {"English": "Digitised documentary collection", "Español": "Colección documental digitalizada"},
         "Controle descritivo dos conjuntos documentais sob guarda ou análise do grupo.": {"English": "Descriptive control of documentary sets under custody or analysis by the group.", "Español": "Control descriptivo de los conjuntos documentales bajo custodia o análisis del grupo."},
         "Fotografia (FOT)": {"English": "Photography (FOT)", "Español": "Fotografía (FOT)"},
@@ -78,73 +90,23 @@ css_base = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Serif+4:wght@400;500;600&display=swap');
 
-h1, h2, h3, .stTitle, .stSubheader {
-    font-family: 'Cormorant Garamond', serif !important;
-    letter-spacing: 0.3px;
-}
-html, body, [class*="css"] {
-    font-family: 'Source Serif 4', serif !important;
-}
-h1 {
-    font-size: 2.4rem !important;
-    font-weight: 700 !important;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid rgba(120,120,120,0.25);
-    margin-bottom: 1rem;
-    line-height: 1.2;
-}
-h2 {
-    font-size: 1.8rem !important;
-    font-weight: 600 !important;
-    margin-top: 1.5rem !important;
-}
-div[data-testid="metric-container"] {
-    border-radius: 18px;
-    padding: 1rem;
-    border: 1px solid rgba(120,120,120,0.18);
-    background: rgba(80, 120, 160, 0.06);
-    backdrop-filter: blur(4px);
-}
-div[data-testid="stDataFrame"] {
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(120,120,120,0.15);
-}
-.stTextInput input,
-.stSelectbox div[data-baseweb="select"] > div,
-.stMultiSelect div[data-baseweb="select"] > div {
-    border-radius: 12px !important;
-    border: 1px solid rgba(120,120,120,0.2) !important;
-}
-span[data-baseweb="tag"] {
-    background-color: #2f6f8f !important;
-    color: white !important;
-    border-radius: 6px !important;
-}
-span[data-baseweb="tag"] span {
-    color: white !important;
-}
-.stButton > button {
-    border-radius: 999px !important;
-    border: none !important;
-    background: linear-gradient(135deg, #2f6f8f, #4ba3a6) !important;
-    color: white !important;
-    font-family: 'Source Serif 4', serif !important;
-    font-weight: 600 !important;
-    padding: 0.6rem 1.2rem !important;
-    transition: all 0.2s ease;
-}
-.stButton > button:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.05);
-}
+.block-container { padding-top: 1.5rem !important; }
+h1, h2, h3, .stTitle, .stSubheader { font-family: 'Cormorant Garamond', serif !important; letter-spacing: 0.3px; }
+html, body, [class*="css"] { font-family: 'Source Serif 4', serif !important; }
+h1 { font-size: 2.4rem !important; font-weight: 700 !important; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(120,120,120,0.25); margin-bottom: 1rem; line-height: 1.2; }
+div[data-testid="metric-container"] { border-radius: 18px; padding: 1rem; border: 1px solid rgba(120,120,120,0.18); background: rgba(80, 120, 160, 0.06); backdrop-filter: blur(4px); }
+div[data-testid="stDataFrame"] { border-radius: 16px; overflow: hidden; border: 1px solid rgba(120,120,120,0.15); }
+.stTextInput input, .stSelectbox div[data-baseweb="select"] > div, .stMultiSelect div[data-baseweb="select"] > div { border-radius: 12px !important; border: 1px solid rgba(120,120,120,0.2) !important; }
+span[data-baseweb="tag"] { background-color: #2f6f8f !important; color: white !important; border-radius: 6px !important; }
+span[data-baseweb="tag"] span { color: white !important; }
+.stButton > button { border-radius: 999px !important; border: none !important; background: linear-gradient(135deg, #2f6f8f, #4ba3a6) !important; color: white !important; font-family: 'Source Serif 4', serif !important; font-weight: 600 !important; padding: 0.6rem 1.2rem !important; transition: all 0.2s ease; }
+.stButton > button:hover { transform: translateY(-1px); filter: brightness(1.05); }
 </style>
 """
-
 st.markdown(css_base, unsafe_allow_html=True)
 
 # ============================================================
-# FUNÇÕES DE CACHE
+# FUNÇÕES DE CACHE E EXTRAÇÃO
 # ============================================================
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
@@ -160,6 +122,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         df_mestra['Conteúdo (Busca)'] = ""
         df_mestra['Data (Busca)'] = ""
         df_mestra['Notação (Busca)'] = ""
+        df_mestra['Notas (Busca)'] = ""
         
         col_ref = next((c for c in df_mestra.columns if 'código' in c.lower() or 'notação' in c.lower() or 'unidade' in c.lower()), None)
         if not col_ref: col_ref = df_mestra.columns[0]
@@ -174,7 +137,6 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                 cod_norm = re.sub(r'[\s\-_]', '', str(row[col_ref])).lower()
                 if aba_norm in cod_norm or cod_norm in aba_norm:
                     indices_mestra.append(idx)
-            
             if not indices_mestra: continue
                 
             df_det = pd.read_excel(xls, sheet_name=aba)
@@ -183,6 +145,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
             col_c = next((c for c in df_det.columns if 'conteúdo' in c.lower() or 'assunto' in c.lower()), None)
             col_d = next((c for c in df_det.columns if 'data' in c.lower()), None)
             col_n = next((c for c in df_det.columns if 'referência' in c.lower() or 'notação' in c.lower() or 'código' in c.lower()), None)
+            col_notas = next((c for c in df_det.columns if 'nota' in c.lower()), None)
             
             for i, idx_mestra in enumerate(indices_mestra):
                 if i < len(df_det):
@@ -191,11 +154,13 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     c_val = str(r_det[col_c]).strip() if col_c and pd.notna(r_det[col_c]) else ""
                     d_val = str(r_det[col_d]).strip() if col_d and pd.notna(r_det[col_d]) else ""
                     n_val = str(r_det[col_n]).strip() if col_n and pd.notna(r_det[col_n]) else df_mestra.at[idx_mestra, col_ref]
-                    if t_val == "" or t_val.lower() == "nan": t_val = "[Título não localizado]"
-                    df_mestra.at[idx_mestra, 'Título (Busca)'] = t_val
+                    notas_val = str(r_det[col_notas]).strip() if col_notas and pd.notna(r_det[col_notas]) else ""
+                    
+                    df_mestra.at[idx_mestra, 'Título (Busca)'] = t_val if t_val.lower() != "nan" and t_val else "[Título não localizado]"
                     df_mestra.at[idx_mestra, 'Conteúdo (Busca)'] = c_val
                     df_mestra.at[idx_mestra, 'Data (Busca)'] = d_val
                     df_mestra.at[idx_mestra, 'Notação (Busca)'] = n_val
+                    df_mestra.at[idx_mestra, 'Notas (Busca)'] = notas_val
                 else:
                     df_mestra.at[idx_mestra, 'Notação (Busca)'] = df_mestra.at[idx_mestra, col_ref]
 
@@ -210,9 +175,9 @@ def buscar_producao_autoras(api_token, lista_autoras):
     url_busca = "https://dataverse.fgv.br/api/search"
     headers = {"X-Dataverse-key": api_token} if api_token else {}
     resultados_unicos = {} 
-    
     for autora in lista_autoras:
-        params = {"q": f'authorName:"{autora}"', "type": "dataset", "per_page": 50}
+        # Busca flexível pelo nome exato em qualquer campo do dataset
+        params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
         try:
             resposta = requests.get(url_busca, headers=headers, params=params)
             if resposta.status_code == 200:
@@ -235,7 +200,6 @@ def buscar_producao_autoras(api_token, lista_autoras):
 # ============================================================
 st.title(traduzir("Inventário e estatística das coleções do GPDVE"))
 st.markdown(traduzir("Gestão e visualização transversal de metadados arquivísticos."))
-
 st.caption(traduzir("O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa."))
 
 # ============================================================
@@ -247,21 +211,16 @@ aba_inventario, aba_producao = st.tabs([traduzir("Inventário do acervo cataloga
 # ABA 1: INVENTÁRIO DO ACERVO
 # ============================================================
 with aba_inventario:
-    
     dicionario_tematico = {
         "Família": ["mãe", "filho", "criança", "pai", "avó"],
         "Educação, artes e ofícios": ["escola", "alfabetização", "atividade cultural", "costura"],
         "Arquitetura prisional": ["grade", "cela", "janela", "parede", "portão"]
     }
 
-    pasta_acervo = r"C:\Users\mille\OneDrive\Área de Trabalho\inventario_acervo"
-    if not os.path.exists(pasta_acervo):
-        st.error(f"Pasta não encontrada: {pasta_acervo}")
-        st.stop()
-
+    pasta_acervo = "."
     arquivos = [f for f in os.listdir(pasta_acervo) if f.lower().endswith(('.xlsx', '.xls'))]
     if not arquivos:
-        st.error("Nenhum arquivo Excel encontrado na pasta.")
+        st.warning("Nenhum arquivo Excel encontrado na pasta do sistema.")
         st.stop()
 
     selecionados = st.multiselect(traduzir("Selecione as planilhas para integrar:"), arquivos, default=arquivos)
@@ -276,7 +235,8 @@ with aba_inventario:
 
     if termo:
         df_filtrado['SUPER_STRING'] = df_filtrado.apply(lambda row: ' '.join(row.dropna().astype(str)), axis=1)
-        mask = df_filtrado['SUPER_STRING'].str.contains(termo, case=False, regex=False)
+        # O \b garante a busca pela palavra exata isolada
+        mask = df_filtrado['SUPER_STRING'].str.contains(rf'\b{termo}\b', case=False, regex=True)
         df_filtrado = df_filtrado[mask].drop(columns=['SUPER_STRING'])
 
     st.subheader(traduzir("Filtros categoriais"))
@@ -284,12 +244,8 @@ with aba_inventario:
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
     dicionario_siglas = {
-        "FOT": traduzir("Fotografia (FOT)"),
-        "PLN": traduzir("Planta cartográfica (PLN)"),
-        "DGZ": traduzir("Digitalizado (DGZ)"),
-        "ICO": traduzir("Iconográfico (ICO)"),
-        "MTO": traduzir("Meio magnético/ótico (MTO)"),
-        "TXT": traduzir("Textual (TXT)")
+        "FOT": traduzir("Fotografia (FOT)"), "PLN": traduzir("Planta cartográfica (PLN)"), "DGZ": traduzir("Digitalizado (DGZ)"),
+        "ICO": traduzir("Iconográfico (ICO)"), "MTO": traduzir("Meio magnético/ótico (MTO)"), "TXT": traduzir("Textual (TXT)")
     }
 
     filtros_selecionados = {}
@@ -299,10 +255,7 @@ with aba_inventario:
             with l_cols[i]:
                 valores = [v for v in df_consolidado[col].dropna().unique() if "Unnamed" not in str(v)]
                 filtros_selecionados[col] = st.multiselect(
-                    f"{col}", 
-                    sorted(valores), 
-                    key=f"f_{col}",
-                    format_func=lambda x: dicionario_siglas.get(str(x), str(x))
+                    f"{col}", sorted(valores), key=f"f_{col}", format_func=lambda x: dicionario_siglas.get(str(x), str(x))
                 )
 
     for col, sel in filtros_selecionados.items():
@@ -316,12 +269,9 @@ with aba_inventario:
     
     df_metricas = df_filtrado.drop(columns=['Arquivo_origem', 'SUPER_STRING'], errors='ignore')
     df_metricas = df_metricas.replace(r'^\s*$', pd.NA, regex=True).replace("[Título não localizado]", pd.NA)
-    total_metadados = df_metricas.notna().sum().sum()
-    
-    col3.metric(traduzir("Metadados indexados (total)"), total_metadados)
+    col3.metric(traduzir("Metadados indexados (total)"), df_metricas.notna().sum().sum())
 
     st.subheader(traduzir("Análises e visualizações do acervo"))
-
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
     opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys())
@@ -332,120 +282,105 @@ with aba_inventario:
         df_datas = df_filtrado.copy()
         df_datas['Ano_Extraido'] = df_datas['Data (Busca)'].astype(str).str.extract(r'((?:18|19|20)\d{2})')
         df_anos = df_datas.dropna(subset=['Ano_Extraido'])
-
         if not df_anos.empty:
             contagem_anos = df_anos['Ano_Extraido'].value_counts().reset_index()
             contagem_anos.columns = ['Ano', 'Frequência']
-            contagem_anos = contagem_anos.sort_values(by='Ano')
-            
-            fig_linha = px.line(
-                contagem_anos, x='Ano', y='Frequência', markers=True, 
-                color_discrete_sequence=['#4ba3a6']
-            )
-            fig_linha.update_layout(
-                template='plotly_dark', 
-                font=dict(family='Source Serif 4, serif', size=15),
-                title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)')
-            )
+            fig_linha = px.line(contagem_anos.sort_values(by='Ano'), x='Ano', y='Frequência', markers=True, color_discrete_sequence=['#4ba3a6'])
+            fig_linha.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)'))
             fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
             st.plotly_chart(fig_linha, use_container_width=True)
 
-    elif visualizacao_selecionada == opcao_limpar:
-        pass 
-
-    else:
+    elif visualizacao_selecionada != opcao_limpar:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str).str.lower())
-        contagem_termos = {palavra: texto_combinado.count(palavra.lower()) for palavra in palavras_chave}
+        texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
         
-        df_estatistica = pd.DataFrame(list(contagem_termos.items()), columns=['Termo do eixo', 'Frequência'])
-        fig_tema = px.bar(
-            df_estatistica, x='Termo do eixo', y='Frequência', text='Frequência',
-            color='Frequência', color_continuous_scale=['#16324F', '#235789', '#2F6F8F', '#4BA3A6', '#7BC6CC']
-        )
-        fig_tema.update_traces(textposition='outside', marker_line_width=0)
-        fig_tema.update_layout(
-            template='plotly_dark', 
-            font=dict(family='Source Serif 4, serif', size=15),
-            title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)),
-            coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)')
-        )
+        # Nova lógica Regex unificada: conta apenas a palavra exata e isolada, ignorando pontuações coladas
+        contagem_termos = {}
+        for palavra in palavras_chave:
+            ocorrencias = len(re.findall(rf'\b{palavra.lower()}\b', texto_combinado))
+            contagem_termos[palavra] = ocorrencias
+        
+        fig_tema = px.bar(pd.DataFrame(list(contagem_termos.items()), columns=['Termo', 'Frequência']), x='Termo', y='Frequência', text='Frequência', color='Frequência', color_continuous_scale=['#16324F', '#235789', '#2F6F8F', '#4BA3A6', '#7BC6CC'])
+        fig_tema.update_traces(textposition='outside')
+        fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
     st.subheader(traduzir("Visualização detalhada"))
-    
-    df_exibicao = df_filtrado.copy()
-    df_exibicao.reset_index(drop=True, inplace=True)
+    df_exibicao = df_filtrado.copy().reset_index(drop=True)
     df_exibicao.index += 1
-    
     st.dataframe(df_exibicao, use_container_width=True, height=350)
 
     st.subheader(traduzir("Instrumentos de pesquisa"))
-    if st.button(traduzir("Gerar INVENTÁRIO DO ACERVO")):
+    
+    tamanho_est_mb = max(0.01, len(df_filtrado['Arquivo_origem'].unique()) * 0.05)
+    st.markdown(f"**Tamanho estimado do arquivo:** ~{tamanho_est_mb:.2f} MB")
+
+    if st.button(traduzir("Gerar inventário do acervo")):
         if df_filtrado.empty:
             st.warning("Não há registros para exportar com os filtros atuais.")
         else:
-            doc = Document()
-            doc.add_heading('INVENTÁRIO DO ACERVO', 0)
-            doc.add_heading('Coleção: Arquivo Público do Estado de São Paulo (APESP)', level=1)
-            grupos_arquivos = df_filtrado.groupby('Arquivo_origem')
+            palavras_chave = dicionario_tematico[visualizacao_selecionada]
+            # Aqui alteramos para df_consolidado. Assim, o gráfico de eixos temáticos 
+            # ignora a "Busca avançada" e analisa o acervo como um todo.
+            texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
+            contagem_termos = {palavra: texto_combinado.count(palavra.lower()) for palavra in palavras_chave}
             
-            for arquivo_origem, df_grupo in grupos_arquivos:
-                if "CPOS" in arquivo_origem.upper():
-                    nome_sub, sub_tipo = "CPOS (Plantas e Obras Públicas)", "Acervo iconográfico"
-                elif "DASP" in arquivo_origem.upper():
-                    nome_sub, sub_tipo = "DASP (Fotografias)", "Acervo fotográfico"
-                else:
-                    nome_sub, sub_tipo = "Subconjunto documental", "Acervo iconográfico"
-                    
-                doc.add_heading(f'Subconjunto: {nome_sub}', level=1)
-                col_h = next((c for c in df_grupo.columns if 'história' in c.lower() or 'historico' in c.lower()), None)
-                if col_h and len(df_grupo[col_h].dropna().unique()) > 0:
-                    hist_txt = str(df_grupo[col_h].dropna().unique()[0]).strip()
-                    if hist_txt and hist_txt.lower() != "nan":
-                        doc.add_heading('História arquivística', level=2)
-                        doc.add_paragraph(hist_txt)
-                
-                doc.add_heading(sub_tipo, level=2)
-                for idx, row in df_grupo.iterrows():
-                    doc.add_heading(str(row.get('Título (Busca)', '[Título não localizado]')), level=3)
-                    table = doc.add_table(rows=1, cols=2)
-                    cells = table.rows[0].cells
-                    c1 = cells[0].paragraphs[0]
-                    c1.add_run("Características:\n").bold = True
-                    c1.add_run(f"Gênero: {row.get('Gênero documental', '')}\nEspécie: {row.get('Espécie/Tipo documental', '')}\nTécnica: {row.get('Técnica de registro', '')}")
-                    
-                    c2 = cells[1].paragraphs[0]
-                    cont_final, data_final = row.get('Conteúdo (Busca)', ''), row.get('Data (Busca)', '')
-                    if cont_final: 
-                        c2.add_run("Conteúdo:\n").bold = True
-                        c2.add_run(str(cont_final) + "\n\n")
-                    if data_final: 
-                        c2.add_run("Data: ").bold = True
-                        c2.add_run(str(data_final))
-                    
-                    p_not = doc.add_paragraph()
-                    p_not.add_run("Notação: ").bold = True
-                    p_not.add_run(str(row.get('Notação (Busca)', '')))
-                    doc.add_paragraph("-" * 40)
-                doc.add_page_break()
-            doc.save("inventario_gpdve_final.docx")
-            st.success("Documento exportado com sucesso.")
+            df_estatistica = pd.DataFrame(list(contagem_termos.items()), columns=['Termo do eixo', 'Frequência'])
+            fig_tema = px.bar(
+                df_estatistica, x='Termo do eixo', y='Frequência', text='Frequência',
+                color='Frequência', color_continuous_scale=['#16324F', '#235789', '#2F6F8F', '#4BA3A6', '#7BC6CC']
+            )
+            fig_tema.update_traces(textposition='outside', marker_line_width=0)
+            fig_tema.update_layout(
+                template='plotly_dark', 
+                font=dict(family='Source Serif 4, serif', size=15),
+                title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)),
+                coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)')
+            )
+            st.plotly_chart(fig_tema, use_container_width=True)
 
 # ============================================================
-# ABA 2: PRODUÇÃO INSTITUCIONAL E DADOS
+# ABA 2: VISÃO GERAL DO ACERVO E OBSERVATÓRIO DATAVERSE
 # ============================================================
 with aba_producao:
+    
+    st.subheader("Estrutura hierárquica da coleção")
+    st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
+
+    st.markdown("### Coleção: Arquivo Público do Estado de São Paulo (APESP)")
+    st.markdown("**Série: Companhia de Obras e Serviços (CPOS)**\n- Subsérie: Plantas cartográficas do Carandiru")
+    st.markdown("**Série: Diários Associados do Estado de São Paulo (DASP)**\n- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru")
+
+    st.markdown("### Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)")
+    st.markdown("**Série: Notícias**\n- Subséries: Massacre, Demolição, DVD Original, DVD Original 2")
+    st.markdown("**Série: Filmes**\n- Subséries: Penitenciária do Estado em 1928, Direção de arte do filme Carandiru, Slideshow e charge, Bastidores do filme Carandiru, Filmes de Hector Bebenco, DVD Original")
+    st.markdown("**Série: Mapeamentos**\n- Unidades documentais: Rememorações do Massacre do Carandiru, Notícias Massacre da Penha")
+    st.markdown("**Série: Arcoenge**\n- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru")
+
+    st.markdown("### Coleção: Procedimentos judiciais e administrativos (PROCJURADM)")
+    st.markdown("- Série: Tribunal de Justiça do Estado de São Paulo (TJSP)")
+    st.markdown("- Série: Assembleia Legislativa do Estado de São Paulo (ALESP)")
+    st.markdown("- Série: Ministério Público do Estado de São Paulo (MPSP)")
+    st.markdown("- Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)")
+    st.markdown("- Série: Ministério da Justiça (MINJUSTICA)")
+    st.markdown("- Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)")
+
+    st.markdown("---")
+    
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
-    st.markdown(traduzir("Listagem automatizada das publicações do GPDVE no FGV Dataverse."))
+    st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
-    meu_token_api = ""
-    pesquisadoras_rastreadas = ["Machado, Maíra Rocha", "Ferreira, Carolina Cutrupi", "Tavolari, Bianca"]
+    # INSERÇÃO DA CREDENCIAL API
+    meu_token_api = "565e0c9f-6ddb-484f-b66a-cdd54782e9fa"
     
-    with st.spinner("Consultando o repositório... / Querying repository..."):
+    pesquisadoras_rastreadas = [
+        "Machado, Maíra Rocha", 
+        "Ferreira, Carolina Cutrupi", 
+        "Tavolari, Bianca"
+    ]
+    
+    with st.spinner("Consultando o repositório..."):
         df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
     
     if not df_producao.empty:
@@ -455,21 +390,9 @@ with aba_producao:
             hide_index=True,
             use_container_width=True
         )
-    
-    st.markdown("---")
-    st.subheader(traduzir("Acervo documental digitalizado"))
-    st.markdown(traduzir("Controle descritivo dos conjuntos documentais sob guarda ou análise do grupo."))
-    
-    dados_digitalizados = {
-        "Fundo/coleção": ["APESP - cpos", "APESP - dasp", "outros documentos"],
-        "Natureza do acervo": ["iconográfico (plantas)", "fotográfico", "textual"],
-        "Formato digital": ["PDF / TIFF", "JPEG", "PDF"],
-        "Status da digitalização": ["concluído", "em andamento", "pendente"]
-    }
-    st.dataframe(pd.DataFrame(dados_digitalizados), hide_index=True, use_container_width=True)
 
 # ============================================================
-# 7. RODAPÉ INSTITUCIONAL (FORA DAS ABAS)
+# 7. RODAPÉ INSTITUCIONAL
 # ============================================================
 meses = ["jan.", "fev.", "mar.", "abr.", "maio", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."]
 data_atual = datetime.now()
