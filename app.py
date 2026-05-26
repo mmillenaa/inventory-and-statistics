@@ -371,11 +371,6 @@ with aba_inventario:
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO E OBSERVATÓRIO DATAVERSE
 # ============================================================
-import streamlit as st
-
-# Criando as abas (certifique-se de que seu código já faz isso ou adapte o nome das variáveis)
-# Exemplo: aba1, aba2 = st.tabs(["Inventário do acervo catalogado", "Visão geral do acervo"])
-
 html_hierarquia = """
 <style>
 .hierarquia-acervo {
@@ -386,28 +381,23 @@ html_hierarquia = """
     margin: 0;
     padding: 0;
 }
-
 .hierarquia-acervo ul {
     list-style-type: disc;
     margin: 4px 0 8px 0;
     padding-left: 24px;
 }
-
 .hierarquia-acervo ul ul {
     list-style-type: circle;
     margin: 4px 0 4px 0;
     padding-left: 20px;
 }
-
 .hierarquia-acervo li {
     margin-bottom: 4px;
 }
-
 .tag-container {
     margin: 4px 0 10px 0;
     padding-left: 0;
 }
-
 .tag-azul {
     background-color: #2f6f8f;
     color: white;
@@ -528,8 +518,7 @@ html_hierarquia = """
 </div>
 """
 
-# O TRUQUE ESTÁ AQUI: Vincula o conteúdo especificamente à aba 2
-with aba2:
+with aba_producao:
     st.markdown(html_hierarquia, unsafe_allow_html=True)
 
 # ============================================================
