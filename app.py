@@ -390,11 +390,17 @@ with aba_producao:
         margin-bottom: 8px; 
         padding-left: 25px; 
     }
+    .hierarquia-acervo ul ul {
+        list-style-type: circle; /* Diferencia visualmente a unidade documental */
+        margin-top: 2px;
+        margin-bottom: 2px;
+        padding-left: 20px;
+    }
     .hierarquia-acervo li { 
         margin-bottom: 2px; 
     }
     .tag-container { 
-        padding-left: 25px; /* Alinha com o texto da subsérie, mas sem a bolinha */
+        padding-left: 25px; 
         margin-top: 2px; 
         margin-bottom: 10px; 
     }
@@ -427,10 +433,12 @@ with aba_producao:
         <ul>
             <li><strong>Série: Notícias (NOTICIAS)</strong>
                 <ul>
-                    <li>Subsérie: Massacre do Carandiru</li>
-                    <li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)</li>
-                    <li>Subsérie: DVD Original</li>
-                    <li>Subsérie: DVD Original 2</li>
+                    <li>Subsérie: Massacre do Carandiru
+                        <ul><li>Unidade documental: DVD Original</li></ul>
+                    </li>
+                    <li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)
+                        <ul><li>Unidade documental: DVD Original 2</li></ul>
+                    </li>
                 </ul>
                 <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
             </li>
@@ -441,7 +449,7 @@ with aba_producao:
                     <li>Subsérie: Slideshow e charge</li>
                     <li>Subsérie: Bastidores do filme Carandiru</li>
                     <li>Subsérie: Filmes de Hector Bebenco</li>
-                    <li>Subsérie: DVD Original</li>
+                    <li>Unidade documental: DVD original que abrange os documentários sobre o filme Carandiru (de Hector Bebenco) e o documentário sobre a penitenciária do estado em 1928.</li>
                 </ul>
                 <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
             </li>
