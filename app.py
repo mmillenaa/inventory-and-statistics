@@ -12,8 +12,8 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 # SISTEMA DE SEGURANÇA (PORTA TRANCADA)
 # ============================================================
-def password_entered():
-        # Retiramos o st.secrets e voltamos para o texto apenas para o teste local de agora
+def check_password():
+    def password_entered():
         if st.session_state["password"] == "acervo2026":
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
