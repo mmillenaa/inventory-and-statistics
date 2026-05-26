@@ -371,64 +371,52 @@ with aba_inventario:
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO E OBSERVATÓRIO DATAVERSE
 # ============================================================
-with aba_producao:
-    
-    st.subheader("Estrutura hierárquica da coleção")
-    st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
+from textwrap import dedent
 
-    html_hierarquia = """
+html_hierarquia = dedent("""
 <style>
-.hierarquia-acervo { 
-    font-family: 'Source Serif 4', serif; 
-    line-height: 1.3; 
-    font-size: 1rem; 
-    color: var(--text-color);
+.hierarquia-acervo {
+    font-family: 'Source Serif 4', serif;
+    line-height: 1.35;
+    font-size: 1rem;
+    color: inherit;
+    margin: 0;
+    padding: 0;
 }
-.hierarquia-acervo ul { 
-    list-style-type: disc; 
-    margin-top: 2px; 
-    margin-bottom: 8px; 
-    padding-left: 25px; 
+
+.hierarquia-acervo ul {
+    list-style-type: disc;
+    margin: 4px 0 8px 0;
+    padding-left: 24px;
 }
+
 .hierarquia-acervo ul ul {
     list-style-type: circle;
-    margin-top: 2px;
-    margin-bottom: 2px;
+    margin: 4px 0 4px 0;
     padding-left: 20px;
 }
-.hierarquia-acervo li { 
-    margin-bottom: 2px; 
+
+.hierarquia-acervo li {
+    margin-bottom: 4px;
 }
-.tag-container { 
-    padding-left: 25px; 
-    margin-top: 2px; 
-    margin-bottom: 10px; 
+
+.tag-container {
+    margin: 4px 0 10px 0;
+    padding-left: 0;
 }
-.tag-azul { 
-    background-color: #2f6f8f; 
-    color: white; 
-    border-radius: 6px; 
-    padding: 2px 8px; 
-    font-size: 0.8rem; 
-    display: inline-block; 
+
+.tag-azul {
+    background-color: #2f6f8f;
+    color: white;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.8rem;
+    display: inline-block;
+    line-height: 1.2;
 }
 </style>
 
 <div class="hierarquia-acervo">
-    <strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
-    <ul>
-        <li><strong>Série: Companhia de Obras e Serviços (CPOS)</strong>
-            <ul><li>Subsérie: Plantas cartográficas do Carandiru</li></ul>
-            <div class="tag-container"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </li>
-        <li><strong>Série: Diários Associados do Estado de São Paulo (DASP)</strong>
-            <ul><li>Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru</li></ul>
-            <div class="tag-container"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </li>
-    </ul>
-    
-    <br>
-    
     <strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)</strong>
     <ul>
         <li><strong>Série: Notícias (NOTICIAS)</strong>
@@ -440,8 +428,11 @@ with aba_producao:
                     <ul><li>Unidade documental: DVD Original 2</li></ul>
                 </li>
             </ul>
-            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+            <div class="tag-container">
+                <span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+            </div>
         </li>
+
         <li><strong>Série: Filmes (FILMES)</strong>
             <ul>
                 <li>Subsérie: Penitenciária do Estado em 1928</li>
@@ -451,26 +442,36 @@ with aba_producao:
                 <li>Subsérie: Filmes de Hector Bebenco</li>
                 <li>Unidade documental: DVD original que abrange os documentários sobre o filme Carandiru (de Hector Bebenco) e o documentário sobre a penitenciária do estado em 1928.</li>
             </ul>
-            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+            <div class="tag-container">
+                <span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+            </div>
         </li>
+
         <li><strong>Série: Mapeamentos (MAPEAMENTOS)</strong>
             <ul>
                 <li>Subsérie: Rememorações do Massacre do Carandiru
-                    <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+                    <div class="tag-container">
+                        <span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                    </div>
                 </li>
                 <li>Subsérie: Notícias Massacre da Penha
-                    <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+                    <div class="tag-container">
+                        <span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span>
+                    </div>
                 </li>
             </ul>
         </li>
+
         <li><strong>Série: Arcoenge (ARCOENGE)</strong>
-            <ul><li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li></ul>
-            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+            <ul>
+                <li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li>
+            </ul>
+            <div class="tag-container">
+                <span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+            </div>
         </li>
     </ul>
-    
-    <br>
-    
+
     <strong>Coleção: Procedimentos judiciais e administrativos (PROCJURADM)</strong>
     <ul>
         <li><strong>Série: Tribunal de Justiça do Estado de São Paulo (TJSP)</strong>
@@ -480,49 +481,31 @@ with aba_producao:
                 <li>Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)</li>
             </ul>
         </li>
+
         <li><strong>Série: Assembleia Legislativa do Estado de São Paulo (ALESP)</strong>
             <ul><li>Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)</li></ul>
         </li>
+
         <li><strong>Série: Ministério Público do Estado de São Paulo (MPSP)</strong>
             <ul><li>Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)</li></ul>
         </li>
+
         <li><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)</strong>
             <ul><li>Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)</li></ul>
         </li>
+
         <li><strong>Série: Ministério da Justiça (MINJUSTICA)</strong>
             <ul><li>Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)</li></ul>
         </li>
+
         <li><strong>Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)</strong>
             <ul><li>Subsérie: Processo de Tombamento (PROCTOM)</li></ul>
         </li>
     </ul>
 </div>
-"""
-    st.markdown(html_hierarquia, unsafe_allow_html=True)
+""").strip()
 
-    st.markdown("---")
-    
-    st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
-    st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
-    
-    # meu_token_api = st.secrets["api_dataverse"]
-    
-    pesquisadoras_rastreadas = [
-        "Machado, Maíra Rocha", 
-        "Ferreira, Carolina Cutrupi", 
-        "Tavolari, Bianca"
-    ]
-    
-    # with st.spinner("Consultando o repositório..."):
-    #     df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
-    # 
-    # if not df_producao.empty:
-    #     st.data_editor(
-    #         df_producao,
-    #         column_config={"Link de acesso": st.column_config.LinkColumn("Link de acesso")},
-    #         hide_index=True,
-    #         use_container_width=True
-    #     )
+st.markdown(html_hierarquia, unsafe_allow_html=True)
 
 # ============================================================
 # 7. RODAPÉ INSTITUCIONAL
