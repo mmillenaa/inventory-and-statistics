@@ -377,127 +377,127 @@ with aba_producao:
     st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
 
     html_hierarquia = """
-    <style>
-    .hierarquia-acervo { 
-        font-family: 'Source Serif 4', serif; 
-        line-height: 1.3; 
-        font-size: 1rem; 
-        color: var(--text-color);
-    }
-    .hierarquia-acervo ul { 
-        list-style-type: disc; 
-        margin-top: 2px; 
-        margin-bottom: 8px; 
-        padding-left: 25px; 
-    }
-    .hierarquia-acervo ul ul {
-        list-style-type: circle; /* Diferencia visualmente a unidade documental */
-        margin-top: 2px;
-        margin-bottom: 2px;
-        padding-left: 20px;
-    }
-    .hierarquia-acervo li { 
-        margin-bottom: 2px; 
-    }
-    .tag-container { 
-        padding-left: 25px; 
-        margin-top: 2px; 
-        margin-bottom: 10px; 
-    }
-    .tag-azul { 
-        background-color: #2f6f8f; 
-        color: white; 
-        border-radius: 6px; 
-        padding: 2px 8px; 
-        font-size: 0.8rem; 
-        display: inline-block; 
-    }
-    </style>
+<style>
+.hierarquia-acervo { 
+    font-family: 'Source Serif 4', serif; 
+    line-height: 1.3; 
+    font-size: 1rem; 
+    color: var(--text-color);
+}
+.hierarquia-acervo ul { 
+    list-style-type: disc; 
+    margin-top: 2px; 
+    margin-bottom: 8px; 
+    padding-left: 25px; 
+}
+.hierarquia-acervo ul ul {
+    list-style-type: circle;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding-left: 20px;
+}
+.hierarquia-acervo li { 
+    margin-bottom: 2px; 
+}
+.tag-container { 
+    padding-left: 25px; 
+    margin-top: 2px; 
+    margin-bottom: 10px; 
+}
+.tag-azul { 
+    background-color: #2f6f8f; 
+    color: white; 
+    border-radius: 6px; 
+    padding: 2px 8px; 
+    font-size: 0.8rem; 
+    display: inline-block; 
+}
+</style>
+
+<div class="hierarquia-acervo">
+    <strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
+    <ul>
+        <li><strong>Série: Companhia de Obras e Serviços (CPOS)</strong>
+            <ul><li>Subsérie: Plantas cartográficas do Carandiru</li></ul>
+            <div class="tag-container"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </li>
+        <li><strong>Série: Diários Associados do Estado de São Paulo (DASP)</strong>
+            <ul><li>Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru</li></ul>
+            <div class="tag-container"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </li>
+    </ul>
     
-    <div class="hierarquia-acervo">
-        <strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
-        <ul>
-            <li><strong>Série: Companhia de Obras e Serviços (CPOS)</strong>
-                <ul><li>Subsérie: Plantas cartográficas do Carandiru</li></ul>
-                <div class="tag-container"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-            </li>
-            <li><strong>Série: Diários Associados do Estado de São Paulo (DASP)</strong>
-                <ul><li>Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru</li></ul>
-                <div class="tag-container"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-            </li>
-        </ul>
-        
-        <br>
-        
-        <strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)</strong>
-        <ul>
-            <li><strong>Série: Notícias (NOTICIAS)</strong>
-                <ul>
-                    <li>Subsérie: Massacre do Carandiru
-                        <ul><li>Unidade documental: DVD Original</li></ul>
-                    </li>
-                    <li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)
-                        <ul><li>Unidade documental: DVD Original 2</li></ul>
-                    </li>
-                </ul>
-                <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-            </li>
-            <li><strong>Série: Filmes (FILMES)</strong>
-                <ul>
-                    <li>Subsérie: Penitenciária do Estado em 1928</li>
-                    <li>Subsérie: Direção de arte do filme Carandiru</li>
-                    <li>Subsérie: Slideshow e charge</li>
-                    <li>Subsérie: Bastidores do filme Carandiru</li>
-                    <li>Subsérie: Filmes de Hector Bebenco</li>
-                    <li>Unidade documental: DVD original que abrange os documentários sobre o filme Carandiru (de Hector Bebenco) e o documentário sobre a penitenciária do estado em 1928.</li>
-                </ul>
-                <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-            </li>
-            <li><strong>Série: Mapeamentos (MAPEAMENTOS)</strong>
-                <ul>
-                    <li>Subsérie: Rememorações do Massacre do Carandiru
-                        <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-                    </li>
-                    <li>Subsérie: Notícias Massacre da Penha
-                        <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
-                    </li>
-                </ul>
-            </li>
-            <li><strong>Série: Arcoenge (ARCOENGE)</strong>
-                <ul><li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li></ul>
-                <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-            </li>
-        </ul>
-        
-        <br>
-        
-        <strong>Coleção: Procedimentos judiciais e administrativos (PROCJURADM)</strong>
-        <ul>
-            <li><strong>Série: Tribunal de Justiça do Estado de São Paulo (TJSP)</strong>
-                <ul>
-                    <li>Subsérie: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)</li>
-                    <li>Subsérie: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)</li>
-                    <li>Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)</li>
-                </ul>
-            </li>
-            <li><strong>Série: Assembleia Legislativa do Estado de São Paulo (ALESP)</strong>
-                <ul><li>Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)</li></ul>
-            </li>
-            <li><strong>Série: Ministério Público do Estado de São Paulo (MPSP)</strong>
-                <ul><li>Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)</li></ul>
-            </li>
-            <li><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)</strong>
-                <ul><li>Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)</li></ul>
-            </li>
-            <li><strong>Série: Ministério da Justiça (MINJUSTICA)</strong>
-                <ul><li>Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)</li></ul>
-            </li>
-            <li><strong>Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)</strong>
-                <ul><li>Subsérie: Processo de Tombamento (PROCTOM)</li></ul>
-            </li>
-        </ul>
-    </div>
-    """
+    <br>
+    
+    <strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)</strong>
+    <ul>
+        <li><strong>Série: Notícias (NOTICIAS)</strong>
+            <ul>
+                <li>Subsérie: Massacre do Carandiru
+                    <ul><li>Unidade documental: DVD Original</li></ul>
+                </li>
+                <li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)
+                    <ul><li>Unidade documental: DVD Original 2</li></ul>
+                </li>
+            </ul>
+            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </li>
+        <li><strong>Série: Filmes (FILMES)</strong>
+            <ul>
+                <li>Subsérie: Penitenciária do Estado em 1928</li>
+                <li>Subsérie: Direção de arte do filme Carandiru</li>
+                <li>Subsérie: Slideshow e charge</li>
+                <li>Subsérie: Bastidores do filme Carandiru</li>
+                <li>Subsérie: Filmes de Hector Bebenco</li>
+                <li>Unidade documental: DVD original que abrange os documentários sobre o filme Carandiru (de Hector Bebenco) e o documentário sobre a penitenciária do estado em 1928.</li>
+            </ul>
+            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </li>
+        <li><strong>Série: Mapeamentos (MAPEAMENTOS)</strong>
+            <ul>
+                <li>Subsérie: Rememorações do Massacre do Carandiru
+                    <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+                </li>
+                <li>Subsérie: Notícias Massacre da Penha
+                    <div class="tag-container" style="padding-left: 0;"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Série: Arcoenge (ARCOENGE)</strong>
+            <ul><li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li></ul>
+            <div class="tag-container"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </li>
+    </ul>
+    
+    <br>
+    
+    <strong>Coleção: Procedimentos judiciais e administrativos (PROCJURADM)</strong>
+    <ul>
+        <li><strong>Série: Tribunal de Justiça do Estado de São Paulo (TJSP)</strong>
+            <ul>
+                <li>Subsérie: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)</li>
+                <li>Subsérie: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)</li>
+                <li>Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)</li>
+            </ul>
+        </li>
+        <li><strong>Série: Assembleia Legislativa do Estado de São Paulo (ALESP)</strong>
+            <ul><li>Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)</li></ul>
+        </li>
+        <li><strong>Série: Ministério Público do Estado de São Paulo (MPSP)</strong>
+            <ul><li>Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)</li></ul>
+        </li>
+        <li><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)</strong>
+            <ul><li>Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)</li></ul>
+        </li>
+        <li><strong>Série: Ministério da Justiça (MINJUSTICA)</strong>
+            <ul><li>Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)</li></ul>
+        </li>
+        <li><strong>Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)</strong>
+            <ul><li>Subsérie: Processo de Tombamento (PROCTOM)</li></ul>
+        </li>
+    </ul>
+</div>
+"""
     st.markdown(html_hierarquia, unsafe_allow_html=True)
 
     st.markdown("---")
