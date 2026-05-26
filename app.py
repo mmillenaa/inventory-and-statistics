@@ -412,7 +412,7 @@ with aba_producao:
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
     # INSERÇÃO DA CREDENCIAL API (Lendo do cofre local/nuvem)
-    meu_token_api = st.secrets["api_dataverse"]
+    # meu_token_api = st.secrets["api_dataverse"]  <--- COLOCAMOS O # PARA DESATIVAR A FECHADURA
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
@@ -420,16 +420,17 @@ with aba_producao:
         "Tavolari, Bianca"
     ]
     
-    with st.spinner("Consultando o repositório..."):
-        df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
-    
-    if not df_producao.empty:
-        st.data_editor(
-            df_producao,
-            column_config={"Link de acesso": st.column_config.LinkColumn("Link de acesso")},
-            hide_index=True,
-            use_container_width=True
-        )
+    # CONSULTA DESATIVADA TEMPORARIAMENTE PARA O TESTE
+    # with st.spinner("Consultando o repositório..."):
+    #     df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
+    # 
+    # if not df_producao.empty:
+    #     st.data_editor(
+    #         df_producao,
+    #         column_config={"Link de acesso": st.column_config.LinkColumn("Link de acesso")},
+    #         hide_index=True,
+    #         use_container_width=True
+    #     )
 
 # ============================================================
 # 7. RODAPÉ INSTITUCIONAL
