@@ -14,15 +14,21 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 def check_password():
     def password_entered():
-        # Aprova o acesso independentemente da senha inserida
-        st.session_state["password_correct"] = True
+        # Verifica se o input bate com a variável de ambiente salva no Streamlit Cloud
+        if st.session_state["input_senha"] == st.secrets["senha_porta"]:
+            st.session_state["password_correct"] = True
+            # Limpa o input da sessão para não ficar armazenado em texto claro
+            del st.session_state["input_senha"]
+        else:
+            st.session_state["password_correct"] = False
+
     if "password_correct" not in st.session_state:
         st.markdown("<h3 style='text-align: center; font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>Acesso restrito - GPDVE</h3>", unsafe_allow_html=True)
-        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="password")
+        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="input_senha")
         return False
     elif not st.session_state["password_correct"]:
         st.markdown("<h3 style='text-align: center; font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>Acesso restrito - GPDVE</h3>", unsafe_allow_html=True)
-        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="password")
+        st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="input_senha")
         st.error("Senha incorreta. Acesso negado.")
         return False
     else:
@@ -179,7 +185,6 @@ def buscar_producao_autoras(api_token, lista_autoras):
     headers = {"X-Dataverse-key": api_token} if api_token else {}
     resultados_unicos = {} 
     for autora in lista_autoras:
-        # Busca flexível pelo nome exato em qualquer campo do dataset
         params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
         try:
             resposta = requests.get(url_busca, headers=headers, params=params)
@@ -238,7 +243,6 @@ with aba_inventario:
 
     if termo:
         df_filtrado['SUPER_STRING'] = df_filtrado.apply(lambda row: ' '.join(row.dropna().astype(str)), axis=1)
-        # O \b garante a busca pela palavra exata isolada
         mask = df_filtrado['SUPER_STRING'].str.contains(rf'\b{termo}\b', case=False, regex=True)
         df_filtrado = df_filtrado[mask].drop(columns=['SUPER_STRING'])
 
@@ -246,7 +250,6 @@ with aba_inventario:
     cols_int = ['Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro', 'Arquivo_origem']
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
-    # Dicionário expandido com os novos termos catalogados
     dicionario_siglas = {
         "FOT": traduzir("Fotografia (FOT)"),
         "PLN": traduzir("Planta cartográfica (PLN)"),
@@ -267,18 +270,15 @@ with aba_inventario:
     if cols_exist:
         l_cols = st.columns(len(cols_exist))
         
-        # Mapeia as seleções ativas em tempo real para o cruzamento de dados
         selecoes_ativas = {c: st.session_state.get(f"f_{c}", []) for c in cols_exist}
         
         for i, col in enumerate(cols_exist):
             with l_cols[i]:
-                # Filtra a base temporária usando os critérios de todas as OUTRAS colunas
                 df_opcoes = df_consolidado.copy()
                 for o_col, sel_vals in selecoes_ativas.items():
                     if o_col != col and sel_vals:
                         df_opcoes = df_opcoes[df_opcoes[o_col].isin(sel_vals)]
                 
-                # Extrai apenas os valores que possuem correspondência real e matemática
                 valores = [v for v in df_opcoes[col].dropna().unique() if "Unnamed" not in str(v)]
                 
                 filtros_selecionados[col] = st.multiselect(
@@ -288,7 +288,6 @@ with aba_inventario:
                     format_func=lambda x: dicionario_siglas.get(str(x), str(x))
                 )
 
-    # Aplica as restrições finais ao conjunto de dados que abastece as tabelas e indicadores
     for col, sel in filtros_selecionados.items():
         if sel: 
             df_filtrado = df_filtrado[df_filtrado[col].isin(sel)]
@@ -326,7 +325,6 @@ with aba_inventario:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
         texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
         
-        # Nova lógica Regex unificada: conta apenas a palavra exata e isolada, ignorando pontuações coladas
         contagem_termos = {}
         for palavra in palavras_chave:
             ocorrencias = len(re.findall(rf'\b{palavra.lower()}\b', texto_combinado))
@@ -352,8 +350,6 @@ with aba_inventario:
             st.warning("Não há registros para exportar com os filtros atuais.")
         else:
             palavras_chave = dicionario_tematico[visualizacao_selecionada]
-            # Aqui alteramos para df_consolidado. Assim, o gráfico de eixos temáticos 
-            # ignora a "Busca avançada" e analisa o acervo como um todo.
             texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
             contagem_termos = {palavra: texto_combinado.count(palavra.lower()) for palavra in palavras_chave}
             
@@ -380,7 +376,6 @@ with aba_producao:
     st.subheader("Estrutura hierárquica da coleção")
     st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
 
-    # Variável que guarda o visual da "tag azul" para ser repetida nos itens
     tag_estilo = "background-color: #2f6f8f; color: white; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-family: 'Source Serif 4', serif; display: inline-block; margin-top: 5px; margin-bottom: 10px;"
 
     st.markdown("### Coleção: Arquivo Público do Estado de São Paulo (APESP)")
