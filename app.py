@@ -47,7 +47,7 @@ with col_idioma:
 
 def traduzir(texto_pt):
     dicionario = {
-        "Audiovisual (AUD)": {"English": "Audiovisual (AUD)", "Español": "Audiovisual (AUD)"},
+        "Audiovisual (AVS)": {"English": "Audiovisual (AVS)", "Español": "Audiovisual (AVS)"},
         "Filmográfico (FLG)": {"English": "Filmographic (FLG)", "Español": "Filmográfico (FLG)"},
         "Filme (FME)": {"English": "Film (FME)", "Español": "Filme (FME)"},
         "Notícia (NOT)": {"English": "News (NOT)", "Español": "Noticia (NOT)"},
@@ -259,7 +259,7 @@ with aba_inventario:
         "ICO": traduzir("Iconográfico (ICO)"),
         "MTO": traduzir("Meio magnético/ótico (MTO)"),
         "TXT": traduzir("Textual (TXT)"),
-        "AUD": traduzir("Audiovisual (AUD)"),
+        "AVS": traduzir("Audiovisual (AVS)"),
         "FLG": traduzir("Filmográfico (FLG)"),
         "FME": traduzir("Filme (FME)"),
         "NOT": traduzir("Notícia (NOT)"),
@@ -385,23 +385,26 @@ with aba_producao:
     st.subheader("Estrutura hierárquica da coleção")
     st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
 
+    # Variável que guarda o visual da "tag azul" para ser repetida nos itens
+    tag_estilo = "background-color: #2f6f8f; color: white; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-family: 'Source Serif 4', serif; display: inline-block; margin-top: 5px; margin-bottom: 10px;"
+
     st.markdown("### Coleção: Arquivo Público do Estado de São Paulo (APESP)")
-    st.markdown("**Série: Companhia de Obras e Serviços (CPOS)**\n- Subsérie: Plantas cartográficas do Carandiru")
-    st.markdown("**Série: Diários Associados do Estado de São Paulo (DASP)**\n- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru")
+    st.markdown(f"**Série: Companhia de Obras e Serviços (CPOS)**<br>- Subsérie: Plantas cartográficas do Carandiru<br><span style=\"{tag_estilo}\">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
+    st.markdown(f"**Série: Diários Associados do Estado de São Paulo (DASP)**<br>- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru<br><span style=\"{tag_estilo}\">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
 
     st.markdown("### Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)")
-    st.markdown("**Série: Notícias**\n- Subséries: Massacre, Demolição, DVD Original, DVD Original 2")
-    st.markdown("**Série: Filmes**\n- Subséries: Penitenciária do Estado em 1928, Direção de arte do filme Carandiru, Slideshow e charge, Bastidores do filme Carandiru, Filmes de Hector Bebenco, DVD Original")
-    st.markdown("**Série: Mapeamentos**\n- Unidades documentais: Rememorações do Massacre do Carandiru, Notícias Massacre da Penha")
-    st.markdown("**Série: Arcoenge**\n- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru")
+    st.markdown(f"**Série: Notícias**<br>- Subséries: Massacre, Demolição, DVD Original, DVD Original 2<br><span style=\"{tag_estilo}\">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-PNL-TXT-MT0.xls.xlsx</span>", unsafe_allow_html=True)
+    st.markdown(f"**Série: Filmes**<br>- Subséries: Penitenciária do Estado em 1928, Direção de arte do filme Carandiru, Slideshow e charge, Bastidores do filme Carandiru, Filmes de Hector Bebenco, DVD Original<br><span style=\"{tag_estilo}\">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
+    st.markdown(f"**Série: Mapeamentos**<br>- Unidades documentais: Rememorações do Massacre do Carandiru<br><span style=\"{tag_estilo}\">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span><br>- Unidades documentais: Notícias Massacre da Penha<br><span style=\"{tag_estilo}\">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
+    st.markdown(f"**Série: Arcoenge**<br>- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru<br><span style=\"{tag_estilo}\">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
 
     st.markdown("### Coleção: Procedimentos judiciais e administrativos (PROCJURADM)")
-    st.markdown("- Série: Tribunal de Justiça do Estado de São Paulo (TJSP)")
-    st.markdown("- Série: Assembleia Legislativa do Estado de São Paulo (ALESP)")
-    st.markdown("- Série: Ministério Público do Estado de São Paulo (MPSP)")
-    st.markdown("- Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)")
-    st.markdown("- Série: Ministério da Justiça (MINJUSTICA)")
-    st.markdown("- Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)")
+    st.markdown("- Série 1: Tribunal de Justiça do Estado de São Paulo (TJSP)")
+    st.markdown("- Série 2: Assembleia Legislativa do Estado de São Paulo (ALESP)")
+    st.markdown("- Série 3: Ministério Público do Estado de São Paulo (MPSP)")
+    st.markdown("- Série 4: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)")
+    st.markdown("- Série 5: Ministério da Justiça (MINJUSTICA)")
+    st.markdown("- Série 6: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)")
 
     st.markdown("---")
     
