@@ -376,33 +376,68 @@ with aba_producao:
     st.subheader("Estrutura hierárquica da coleção")
     st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
 
+    # Variável que guarda o visual da "tag azul" para os códigos de designação
     tag_estilo = "background-color: #2f6f8f; color: white; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-family: 'Source Serif 4', serif; display: inline-block; margin-top: 5px; margin-bottom: 10px;"
 
-    st.markdown("### Coleção: Arquivo Público do Estado de São Paulo (APESP)")
-    st.markdown(f"**Série: Companhia de Obras e Serviços (CPOS)**<br>- Subsérie: Plantas cartográficas do Carandiru<br><span style=\"{tag_estilo}\">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
-    st.markdown(f"**Série: Diários Associados do Estado de São Paulo (DASP)**<br>- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru<br><span style=\"{tag_estilo}\">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
+    with st.expander("Coleção: Arquivo Público do Estado de São Paulo (APESP)", expanded=False):
+        st.markdown("**Série: Companhia de Obras e Serviços (CPOS)**")
+        st.markdown("- Subsérie: Plantas cartográficas do Carandiru")
+        st.markdown(f'<span style="{tag_estilo}">BR-SPAPESP_CPOS-PLNCARANDIRU 3350</span>', unsafe_allow_html=True)
+        
+        st.markdown("**Série: Diários Associados do Estado de São Paulo (DASP)**")
+        st.markdown("- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru")
+        st.markdown(f'<span style="{tag_estilo}">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU (3055-005, 2767-011, 2776-012, 3055-003)</span>', unsafe_allow_html=True)
 
-    st.markdown("### Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)")
-    st.markdown(f"**Série: Notícias**<br>- Subséries: Massacre, Demolição, DVD Original, DVD Original 2<br><span style=\"{tag_estilo}\">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-PNL-TXT-MT0.xls.xlsx</span>", unsafe_allow_html=True)
-    st.markdown(f"**Série: Filmes**<br>- Subséries: Penitenciária do Estado em 1928, Direção de arte do filme Carandiru, Slideshow e charge, Bastidores do filme Carandiru, Filmes de Hector Bebenco, DVD Original<br><span style=\"{tag_estilo}\">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
-    st.markdown(f"**Série: Mapeamentos**<br>- Unidades documentais: Rememorações do Massacre do Carandiru<br><span style=\"{tag_estilo}\">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span><br>- Unidades documentais: Notícias Massacre da Penha<br><span style=\"{tag_estilo}\">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
-    st.markdown(f"**Série: Arcoenge**<br>- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru<br><span style=\"{tag_estilo}\">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>", unsafe_allow_html=True)
+    with st.expander("Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)", expanded=False):
+        st.markdown("**Série: Notícias (NOTICIAS)**")
+        st.markdown("- Subsérie: Massacre<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: Demolição<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-DEMOLICAO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: DVD Original<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: DVD Original 2<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD2-CSDTCARANDIRU</span>', unsafe_allow_html=True)
 
-    st.markdown("### Coleção: Procedimentos judiciais e administrativos (PROCJURADM)")
-    st.markdown("- Série 1: Tribunal de Justiça do Estado de São Paulo (TJSP)")
-    st.markdown("- Série 2: Assembleia Legislativa do Estado de São Paulo (ALESP)")
-    st.markdown("- Série 3: Ministério Público do Estado de São Paulo (MPSP)")
-    st.markdown("- Série 4: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)")
-    st.markdown("- Série 5: Ministério da Justiça (MINJUSTICA)")
-    st.markdown("- Série 6: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)")
+        st.markdown("**Série: Filmes (FILMES)**")
+        st.markdown("- Subsérie: Penitenciária do Estado em 1928<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-PENITESTADO1928-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: Direção de arte do filme Carandiru<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-DIRARTECARANDIRU-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: Slideshow e charge<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-SLIDESHOWCHARGE-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: Bastidores do filme Carandiru<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-BASTIDFLMCARANDIRU-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: Filmes de Hector Bebenco<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-FLMSHECTORBEBENCO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+        st.markdown("- Subsérie: DVD Original<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-ORIGINALDVD-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+
+        st.markdown("**Série: Mapeamentos (MAPEAMENTOS)**")
+        st.markdown("- Unidade documental: Rememorações do Massacre do Carandiru")
+        st.markdown("- Unidade documental: Notícias Massacre da Penha")
+
+        st.markdown("**Série: Arcoenge (ARCOENGE)**")
+        st.markdown("- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru")
+        st.markdown(f'<span style="{tag_estilo}">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+
+    with st.expander("Coleção: Procedimentos judiciais e administrativos (PROCJURADM)", expanded=False):
+        st.markdown("**Série 1: Tribunal de Justiça do Estado de São Paulo (TJSP)**")
+        st.markdown("- Dossiê: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)")
+        st.markdown("- Dossiê: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)")
+        st.markdown("- Dossiê: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)")
+
+        st.markdown("**Série 2: Assembleia Legislativa do Estado de São Paulo (ALESP)**")
+        st.markdown("- Dossiê: Comissão Parlamentar de Inquérito de 1992 (CPI)")
+
+        st.markdown("**Série 3: Ministério Público do Estado de São Paulo (MPSP)**")
+        st.markdown("- Dossiê: Inquérito Civil Público de 1992 (INQCIVPUBLICO)")
+
+        st.markdown("**Série 4: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)**")
+        st.markdown("- Dossiê: Sindicância Justiça Militar de 1992 (SINDIC-TJM)")
+
+        st.markdown("**Série 5: Ministério da Justiça (MINJUSTICA)**")
+        st.markdown("- Dossiê: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)")
+
+        st.markdown("**Série 6: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)**")
+        st.markdown("- Dossiê: Processo de Tombamento (PROCTOM)")
 
     st.markdown("---")
     
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
-    # INSERÇÃO DA CREDENCIAL API (Lendo do cofre local/nuvem)
-    # meu_token_api = st.secrets["api_dataverse"]  <--- COLOCAMOS O # PARA DESATIVAR A FECHADURA
+    # meu_token_api = st.secrets["api_dataverse"]
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
@@ -410,7 +445,6 @@ with aba_producao:
         "Tavolari, Bianca"
     ]
     
-    # CONSULTA DESATIVADA TEMPORARIAMENTE PARA O TESTE
     # with st.spinner("Consultando o repositório..."):
     #     df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
     # 
