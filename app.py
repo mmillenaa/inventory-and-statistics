@@ -373,6 +373,9 @@ with aba_inventario:
 # ============================================================
 import streamlit as st
 
+# Criando as abas (certifique-se de que seu código já faz isso ou adapte o nome das variáveis)
+# Exemplo: aba1, aba2 = st.tabs(["Inventário do acervo catalogado", "Visão geral do acervo"])
+
 html_hierarquia = """
 <style>
 .hierarquia-acervo {
@@ -472,6 +475,26 @@ html_hierarquia = """
 </li>
 </ul>
 
+<strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
+<ul>
+<li><strong>Série: Casa de Prisão Provisória de São Paulo (CPOS)</strong>
+<ul>
+<li>Subsérie: Planta do Complexo do Carandiru / Carandiru Plan</li>
+</ul>
+<div class="tag-container">
+<span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+</div>
+</li>
+<li><strong>Série: Departamento de Administração do Sistema Penitenciário (DASP)</strong>
+<ul>
+<li>Subsérie: Penitenciária Regional e Casa de Detenção do Carandiru</li>
+</ul>
+<div class="tag-container">
+<span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+</div>
+</li>
+</ul>
+
 <strong>Coleção: Procedimentos judiciais e administrativos (PROCJURADM)</strong>
 <ul>
 <li><strong>Série: Tribunal de Justiça do Estado de São Paulo (TJSP)</strong>
@@ -505,7 +528,9 @@ html_hierarquia = """
 </div>
 """
 
-st.markdown(html_hierarquia, unsafe_allow_html=True)
+# O TRUQUE ESTÁ AQUI: Vincula o conteúdo especificamente à aba 2
+with aba2:
+    st.markdown(html_hierarquia, unsafe_allow_html=True)
 
 # ============================================================
 # 7. RODAPÉ INSTITUCIONAL
