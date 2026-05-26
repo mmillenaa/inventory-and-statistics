@@ -411,8 +411,8 @@ with aba_producao:
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
-    # INSERÇÃO DA CREDENCIAL API
-    meu_token_api = "api_dataverse"
+    # INSERÇÃO DA CREDENCIAL API (Lendo do cofre local/nuvem)
+    meu_token_api = st.secrets["api_dataverse"]
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
