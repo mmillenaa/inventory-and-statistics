@@ -376,61 +376,67 @@ with aba_producao:
     st.subheader("Estrutura hierárquica da coleção")
     st.markdown("Visão geral e designação dos conjuntos documentais sob guarda e análise do GPDVE.")
 
-    # Variável que guarda o visual da "tag azul" para os códigos de designação
-    tag_estilo = "background-color: #2f6f8f; color: white; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-family: 'Source Serif 4', serif; display: inline-block; margin-top: 5px; margin-bottom: 10px;"
+    tag_estilo = "background-color: #2f6f8f; color: white; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-family: 'Source Serif 4', serif; display: inline-block; margin-top: 2px; margin-bottom: 8px;"
 
-    with st.expander("Coleção: Arquivo Público do Estado de São Paulo (APESP)", expanded=False):
-        st.markdown("**Série: Companhia de Obras e Serviços (CPOS)**")
-        st.markdown("- Subsérie: Plantas cartográficas do Carandiru")
-        st.markdown(f'<span style="{tag_estilo}">BR-SPAPESP_CPOS-PLNCARANDIRU 3350</span>', unsafe_allow_html=True)
-        
-        st.markdown("**Série: Diários Associados do Estado de São Paulo (DASP)**")
-        st.markdown("- Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru")
-        st.markdown(f'<span style="{tag_estilo}">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU (3055-005, 2767-011, 2776-012, 3055-003)</span>', unsafe_allow_html=True)
+    st.markdown(f"""
+    **Coleção: Arquivo Público do Estado de São Paulo (APESP)**
+    * **Série: Companhia de Obras e Serviços (CPOS)**
+        * Subsérie: Plantas cartográficas do Carandiru
+        * <span style="{tag_estilo}">BR-SPAPESP_CPOS-PLNCARANDIRU 3350</span>
+    * **Série: Diários Associados do Estado de São Paulo (DASP)**
+        * Subsérie: Penitenciárias e Presídios - Casa de Detenção Carandiru
+        * <span style="{tag_estilo}">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU (3055-005, 2767-011, 2776-012, 3055-003)</span>
 
-    with st.expander("Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)", expanded=False):
-        st.markdown("**Série: Notícias (NOTICIAS)**")
-        st.markdown("- Subsérie: Massacre<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: Demolição<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-DEMOLICAO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: DVD Original<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: DVD Original 2<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD2-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+    <br>
 
-        st.markdown("**Série: Filmes (FILMES)**")
-        st.markdown("- Subsérie: Penitenciária do Estado em 1928<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-PENITESTADO1928-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: Direção de arte do filme Carandiru<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-DIRARTECARANDIRU-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: Slideshow e charge<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-SLIDESHOWCHARGE-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: Bastidores do filme Carandiru<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-BASTIDFLMCARANDIRU-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: Filmes de Hector Bebenco<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-FLMSHECTORBEBENCO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-        st.markdown("- Subsérie: DVD Original<br>" + f'<span style="{tag_estilo}">BR-SPGPDVE_FILMES-ORIGINALDVD-CSDTCARANDIRU</span>', unsafe_allow_html=True)
+    **Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)**
+    * **Série: Notícias (NOTICIAS)**
+        * Subsérie: Massacre
+        * <span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU</span>
+        * Subsérie: Demolição
+        * <span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-DEMOLICAO-CSDTCARANDIRU</span>
+        * Subsérie: DVD Original
+        * <span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD-CSDTCARANDIRU</span>
+        * Subsérie: DVD Original 2
+        * <span style="{tag_estilo}">BR-SPGPDVE_NOTICIAS-ORIGINALDVD2-CSDTCARANDIRU</span>
+    * **Série: Filmes (FILMES)**
+        * Subsérie: Penitenciária do Estado em 1928
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-PENITESTADO1928-CSDTCARANDIRU</span>
+        * Subsérie: Direção de arte do filme Carandiru
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-DIRARTECARANDIRU-CSDTCARANDIRU</span>
+        * Subsérie: Slideshow e charge
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-SLIDESHOWCHARGE-CSDTCARANDIRU</span>
+        * Subsérie: Bastidores do filme Carandiru
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-BASTIDFLMCARANDIRU-CSDTCARANDIRU</span>
+        * Subsérie: Filmes de Hector Bebenco
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-FLMSHECTORBEBENCO-CSDTCARANDIRU</span>
+        * Subsérie: DVD Original
+        * <span style="{tag_estilo}">BR-SPGPDVE_FILMES-ORIGINALDVD-CSDTCARANDIRU</span>
+    * **Série: Mapeamentos (MAPEAMENTOS)**
+        * Subsérie: Rememorações do Massacre do Carandiru
+        * Subsérie: Notícias Massacre da Penha
+    * **Série: Arcoenge (ARCOENGE)**
+        * Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru
+        * <span style="{tag_estilo}">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU</span>
 
-        st.markdown("**Série: Mapeamentos (MAPEAMENTOS)**")
-        st.markdown("- Unidade documental: Rememorações do Massacre do Carandiru")
-        st.markdown("- Unidade documental: Notícias Massacre da Penha")
+    <br>
 
-        st.markdown("**Série: Arcoenge (ARCOENGE)**")
-        st.markdown("- Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru")
-        st.markdown(f'<span style="{tag_estilo}">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU</span>', unsafe_allow_html=True)
-
-    with st.expander("Coleção: Procedimentos judiciais e administrativos (PROCJURADM)", expanded=False):
-        st.markdown("**Série 1: Tribunal de Justiça do Estado de São Paulo (TJSP)**")
-        st.markdown("- Dossiê: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)")
-        st.markdown("- Dossiê: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)")
-        st.markdown("- Dossiê: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)")
-
-        st.markdown("**Série 2: Assembleia Legislativa do Estado de São Paulo (ALESP)**")
-        st.markdown("- Dossiê: Comissão Parlamentar de Inquérito de 1992 (CPI)")
-
-        st.markdown("**Série 3: Ministério Público do Estado de São Paulo (MPSP)**")
-        st.markdown("- Dossiê: Inquérito Civil Público de 1992 (INQCIVPUBLICO)")
-
-        st.markdown("**Série 4: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)**")
-        st.markdown("- Dossiê: Sindicância Justiça Militar de 1992 (SINDIC-TJM)")
-
-        st.markdown("**Série 5: Ministério da Justiça (MINJUSTICA)**")
-        st.markdown("- Dossiê: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)")
-
-        st.markdown("**Série 6: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)**")
-        st.markdown("- Dossiê: Processo de Tombamento (PROCTOM)")
+    **Coleção: Procedimentos judiciais e administrativos (PROCJURADM)**
+    * **Série: Tribunal de Justiça do Estado de São Paulo (TJSP)**
+        * Subsérie: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)
+        * Subsérie: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)
+        * Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)
+    * **Série: Assembleia Legislativa do Estado de São Paulo (ALESP)**
+        * Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)
+    * **Série: Ministério Público do Estado de São Paulo (MPSP)**
+        * Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)
+    * **Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)**
+        * Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)
+    * **Série: Ministério da Justiça (MINJUSTICA)**
+        * Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)
+    * **Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)**
+        * Subsérie: Processo de Tombamento (PROCTOM)
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
     
