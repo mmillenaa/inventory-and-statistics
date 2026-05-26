@@ -12,10 +12,9 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 # SISTEMA DE SEGURANÇA (PORTA TRANCADA)
 # ============================================================
-def check_password():
-    def password_entered():
-        # O programa agora busca a senha no cofre blindado da nuvem, e não no texto
-        if st.session_state["password"] == st.secrets["senha_acervo"]:
+def password_entered():
+        # Retiramos o st.secrets e voltamos para o texto apenas para o teste local de agora
+        if st.session_state["password"] == "acervo2026":
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
         else:
