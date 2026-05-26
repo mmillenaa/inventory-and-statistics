@@ -430,7 +430,7 @@ html_hierarquia = """
 <ul>
 <li>Subsérie: Penitenciária do Estado em 1928</li>
 <li>Subsérie: Direção de arte do filme Carandiru</li>
-<li>Subsérie: Slideshow e charge</li>
+<li>Subsérie: Slideshow e charge "Recado da Produção"</li>
 <li>Subsérie: Bastidores do filme Carandiru</li>
 <li>Subsérie: Filmes de Hector Bebenco</li>
 <li>Unidade documental: DVD original que abrange os documentários sobre o filme Carandiru (de Hector Bebenco) e o documentário sobre a penitenciária do estado em 1928.</li>
@@ -467,7 +467,7 @@ html_hierarquia = """
 
 <strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
 <ul>
-<li><strong>Série: Casa de Prisão Provisória de São Paulo (CPOS)</strong>
+<li><strong>Série: Companhia Paulista de Obras e Serviços (CPOS)</strong>
 <ul>
 <li>Subsérie: Planta do Complexo do Carandiru / Carandiru Plan</li>
 </ul>
@@ -475,7 +475,7 @@ html_hierarquia = """
 <span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
 </div>
 </li>
-<li><strong>Série: Departamento de Administração do Sistema Penitenciário (DASP)</strong>
+<li><strong>Série: Diários Associados do Estado de São Paulo (DASP)</strong>
 <ul>
 <li>Subsérie: Penitenciária Regional e Casa de Detenção do Carandiru</li>
 </ul>
