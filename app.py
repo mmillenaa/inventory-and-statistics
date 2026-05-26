@@ -14,12 +14,8 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 def check_password():
     def password_entered():
-        if st.session_state["password"] == "acervo2026":
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  
-        else:
-            st.session_state["password_correct"] = False
-
+        # Aprova o acesso independentemente da senha inserida
+        st.session_state["password_correct"] = True
     if "password_correct" not in st.session_state:
         st.markdown("<h3 style='text-align: center; font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>Acesso restrito - GPDVE</h3>", unsafe_allow_html=True)
         st.text_input("Digite a senha de acesso para carregar o acervo:", type="password", on_change=password_entered, key="password")
