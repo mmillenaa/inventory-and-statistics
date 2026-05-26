@@ -433,7 +433,7 @@ html_hierarquia = """
 <li>Subsérie: Slideshow e charge "Recado da Produção"</li>
 <li>Subsérie: Bastidores do filme Carandiru</li>
 <li>Subsérie: Filmes de Hector Bebenco</li>
-<li>Unidade documental: DVD original de documentários sobre o filme Carandiru (de Hector Bebenco) e Penitenciária do Estado 1928.</li>
+<li>Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928".</li>
 </ul>
 <div class="tag-container">
 <span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
@@ -520,6 +520,31 @@ html_hierarquia = """
 
 with aba_producao:
     st.markdown(html_hierarquia, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
+    st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
+    
+    # Chama a chave nova salva nos segredos do Streamlit
+    meu_token_api = st.secrets["api_dataverse"]
+    
+    pesquisadoras_rastreadas = [
+        "Machado, Maíra Rocha", 
+        "Ferreira, Carolina Cutrupi", 
+        "Tavolari, Bianca"
+    ]
+    
+    with st.spinner("Consultando o repositório..."):
+        df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
+    
+    if not df_producao.empty:
+        st.data_editor(
+            df_producao,
+            column_config={"Link de acesso": st.column_config.LinkColumn("Link de acesso")},
+            hide_index=True,
+            use_container_width=True
+        )
 
 # ============================================================
 # 7. RODAPÉ INSTITUCIONAL
