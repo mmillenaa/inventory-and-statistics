@@ -412,7 +412,7 @@ with aba_producao:
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
     # INSERÇÃO DA CREDENCIAL API
-    meu_token_api = "565e0c9f-6ddb-484f-b66a-cdd54782e9fa"
+    meu_token_api = "api_dataverse"
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
