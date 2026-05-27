@@ -513,7 +513,6 @@ html_hierarquia = """
             </li>
         </ul>
     </div>
-
     <div class="colecao-card">
         <strong>Coleção: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong>
         <ul>
@@ -535,7 +534,6 @@ html_hierarquia = """
             </li>
         </ul>
     </div>
-
     <div class="colecao-card">
         <strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong>
         <ul>
