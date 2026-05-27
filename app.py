@@ -242,11 +242,23 @@ def extrair_equipe_fgv():
     except Exception:
         # Fallback de segurança 
         return [
-            "Maíra Rocha Machado", "Carolina Cutrupi Ferreira", "Luisa Moraes Abreu Ferreira",
-            "Cecília Asperti", "Bianca Tavolari", "Roberta Canheo", "Ana Beatriz Passos",
-            "Luisa Plastino", "Mariana Zambom", "Viviane Balbuglio", "Maria Eduarda de Castro",
-            "Natalia Santana", "Luciano Pinheiro", "Iasmin Milfont", "Beatriz de Paula",
-            "Cecília Moreira", "Maria Luiza Silva Oliveira", "Maurício Monteiro", "Millena Franco"
+            "Machado, Maíra Rocha", 
+            "Ferreira, Carolina Cutrupi",
+            "Ferreira, Luisa Moraes Abreu" 
+            "Tavolari, Bianca",
+            "Asperti, Cecília",
+            "Canheo, Roberta",
+            "Passos, Ana Beatriz",
+            "Plastino, Luisa Mozetic",
+            "Zambom, Mariana Morais",
+            "Balbuglio, Balbuglio",
+            "Castro, Maria Eduarda de",
+            "Santos, Natália Santana dos",
+            "Milfont, Iasmin",
+            "Moreira, Maria Cecília",
+            "Oliveira, Maria Luiza Silva",
+            "Monteiro, Maurício",
+            "Franco, Millena Miranda"
         ]
 
 # ============================================================
