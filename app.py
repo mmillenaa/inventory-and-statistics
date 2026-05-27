@@ -419,7 +419,8 @@ with aba_inventario:
                 xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)')
             )
             st.plotly_chart(fig_tema, use_container_width=True)
-
+            
+import streamlit_antd_components as sac
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO (SUBSTITUIÇÃO PELO COMPONENTE TREE)
 # ============================================================
