@@ -554,8 +554,9 @@ html_hierarquia = """
 </div>
 """
 
+import streamlit.components.v1 as components
 with aba_producao:
-    st.markdown(html_hierarquia, unsafe_allow_html=True)
+    components.html(html_hierarquia, height=1400, scrolling=True)
 
 # ============================================================
 # ABA 3: EQUIPE E OBSERVATÓRIO DATAVERSE
