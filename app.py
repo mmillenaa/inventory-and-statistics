@@ -57,7 +57,7 @@ def traduzir(texto_pt):
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
-        "Equipe e Observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
+        "Equipe e observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
         "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {"English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.", "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."},
         "Observatório de bases publicadas pelo GPDVE no Dataverse": {"English": "Observatory of databases published by GPDVE on Dataverse", "Español": "Observatorio de bases de datos publicadas por GPDVE en Dataverse"},
         "Equipe do GPDVE": {"English": "GPDVE Team", "Español": "Equipo del GPDVE"},
@@ -265,7 +265,7 @@ st.caption(traduzir("O programa foi concebido para realizar análises estatísti
 aba_inventario, aba_producao, aba_equipe = st.tabs([
     traduzir("Inventário do acervo catalogado"), 
     traduzir("Visão geral do acervo"),
-    traduzir("Equipe e Observatório")
+    traduzir("Equipe e observatório")
 ])
 
 # ============================================================
