@@ -420,8 +420,6 @@ with aba_inventario:
             )
             st.plotly_chart(fig_tema, use_container_width=True)
 
-import streamlit_antd_components as sac
-
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO (SUBSTITUIÇÃO PELO COMPONENTE TREE)
 # ============================================================
