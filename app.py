@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-from docx import Document
 import re
 import os
 import requests
+from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPDVE")
 
@@ -14,10 +14,8 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 def check_password():
     def password_entered():
-        # Verifica se o input bate com a variável de ambiente salva no Streamlit Cloud
         if st.session_state["input_senha"] == st.secrets["senha_porta"]:
             st.session_state["password_correct"] = True
-            # Limpa o input da sessão para não ficar armazenado em texto claro
             del st.session_state["input_senha"]
         else:
             st.session_state["password_correct"] = False
@@ -59,8 +57,11 @@ def traduzir(texto_pt):
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
+        "Equipe e Observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
         "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {"English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.", "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."},
         "Observatório de bases publicadas pelo GPDVE no Dataverse": {"English": "Observatory of databases published by GPDVE on Dataverse", "Español": "Observatorio de bases de datos publicadas por GPDVE en Dataverse"},
+        "Equipe do GPDVE": {"English": "GPDVE Team", "Español": "Equipo del GPDVE"},
+        "Dados extraídos em tempo real da página oficial da FGV Direito SP.": {"English": "Data extracted in real-time from the official FGV Direito SP website.", "Español": "Datos extraídos en tiempo real de la página oficial de la FGV Direito SP."},
         "Busca avançada": {"English": "Advanced search", "Español": "Búsqueda avanzada"},
         "Pesquisar termo nas planilhas (ex: criança, portão, costura)": {"English": "Search term in spreadsheets (e.g., child, gate, sewing)", "Español": "Buscar término en hojas de cálculo (ej: niño, puerta, costura)"},
         "Filtros categoriais": {"English": "Categorical filters", "Español": "Filtros categóricos"},
@@ -93,11 +94,11 @@ def traduzir(texto_pt):
     return dicionario[texto_pt].get(idioma, texto_pt)
 
 # ============================================================
-# ESTILOS (CSS BASE)
+# ESTILOS (CSS BASE E RESPONSIVIDADE)
 # ============================================================
 css_base = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Serif+4:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Serif+4:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 .block-container { padding-top: 1.5rem !important; }
 h1, h2, h3, .stTitle, .stSubheader { font-family: 'Cormorant Garamond', serif !important; letter-spacing: 0.3px; }
@@ -110,12 +111,23 @@ span[data-baseweb="tag"] { background-color: #2f6f8f !important; color: white !i
 span[data-baseweb="tag"] span { color: white !important; }
 .stButton > button { border-radius: 999px !important; border: none !important; background: linear-gradient(135deg, #2f6f8f, #4ba3a6) !important; color: white !important; font-family: 'Source Serif 4', serif !important; font-weight: 600 !important; padding: 0.6rem 1.2rem !important; transition: all 0.2s ease; }
 .stButton > button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* Estilização das Siglas e Códigos */
+.sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
+
+/* Correções de Responsividade Mobile */
+@media (max-width: 768px) {
+    .block-container { padding-top: 1rem !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+    h1 { font-size: 1.8rem !important; }
+    div[data-testid="metric-container"] { padding: 0.8rem; }
+    .hierarquia-grid { grid-template-columns: 1fr !important; }
+}
 </style>
 """
 st.markdown(css_base, unsafe_allow_html=True)
 
 # ============================================================
-# FUNÇÕES DE CACHE E EXTRAÇÃO
+# FUNÇÕES DE EXTRAÇÃO, CACHE E WEBSCRAPING
 # ============================================================
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
@@ -147,7 +159,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                 if aba_norm in cod_norm or cod_norm in aba_norm:
                     indices_mestra.append(idx)
             if not indices_mestra: continue
-                
+          
             df_det = pd.read_excel(xls, sheet_name=aba)
             df_det = df_det.dropna(how='all')
             col_t = next((c for c in df_det.columns if 'título' in c.lower() or 'titulo' in c.lower()), None)
@@ -176,7 +188,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         df_consolidado = pd.concat([df_consolidado, df_mestra], ignore_index=True)
         
     if not df_consolidado.empty:
-        df_consolidado = df_consolidado.loc[:, ~df_consolidado.columns.str.contains('^Unnamed')]
+         df_consolidado = df_consolidado.loc[:, ~df_consolidado.columns.str.contains('^Unnamed')]
     return df_consolidado
 
 @st.cache_data(ttl=3600)
@@ -193,7 +205,7 @@ def buscar_producao_autoras(api_token, lista_autoras):
                 for item in itens:
                     identificador = item.get('global_id')
                     if identificador not in resultados_unicos:
-                        resultados_unicos[identificador] = {
+                         resultados_unicos[identificador] = {
                             "Título da base": item.get('name', '[sem título]'),
                             "Autores": "; ".join(item.get('authors', [])),
                             "Identificador": identificador,
@@ -202,6 +214,40 @@ def buscar_producao_autoras(api_token, lista_autoras):
         except Exception:
             continue
     return pd.DataFrame(list(resultados_unicos.values()))
+
+@st.cache_data(ttl=86400)
+def extrair_equipe_fgv():
+    url = "https://direitosp.fgv.br/grupos-de-pesquisa/grupo-pesquisa-direito-violencia-estado"
+    equipe_extraida = []
+    try:
+        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            textos = soup.stripped_strings
+            capturando = False
+            for text in textos:
+                if text.strip().lower() == "equipe":
+                    capturando = True
+                    continue
+                if capturando and text.strip().lower() in ["mídias", "projetos de pesquisa", "contato", "vídeo"]:
+                    break
+                if capturando:
+                    if "(" in text and ")" in text: 
+                        nome = text.split("(")[0].strip()
+                        if nome and nome not in equipe_extraida:
+                            equipe_extraida.append(nome)
+        if not equipe_extraida:
+            raise ValueError("Falha na extração de texto estruturado.")
+        return equipe_extraida
+    except Exception:
+        # Fallback de segurança 
+        return [
+            "Maíra Rocha Machado", "Carolina Cutrupi Ferreira", "Luisa Moraes Abreu Ferreira",
+            "Cecília Asperti", "Bianca Tavolari", "Roberta Canheo", "Ana Beatriz Passos",
+            "Luisa Plastino", "Mariana Zambom", "Viviane Balbuglio", "Maria Eduarda de Castro",
+            "Natalia Santana", "Luciano Pinheiro", "Iasmin Milfont", "Beatriz de Paula",
+            "Cecília Moreira", "Maria Luiza Silva Oliveira", "Maurício Monteiro", "Millena Franco"
+        ]
 
 # ============================================================
 # CABEÇALHO DO PROGRAMA
@@ -213,7 +259,11 @@ st.caption(traduzir("O programa foi concebido para realizar análises estatísti
 # ============================================================
 # CRIAÇÃO DAS ABAS
 # ============================================================
-aba_inventario, aba_producao = st.tabs([traduzir("Inventário do acervo catalogado"), traduzir("Visão geral do acervo")])
+aba_inventario, aba_producao, aba_equipe = st.tabs([
+    traduzir("Inventário do acervo catalogado"), 
+    traduzir("Visão geral do acervo"),
+    traduzir("Equipe e Observatório")
+])
 
 # ============================================================
 # ABA 1: INVENTÁRIO DO ACERVO
@@ -232,6 +282,7 @@ with aba_inventario:
         st.stop()
 
     selecionados = st.multiselect(traduzir("Selecione as planilhas para integrar:"), arquivos, default=arquivos)
+    
     if not selecionados:
         st.stop()
 
@@ -269,7 +320,6 @@ with aba_inventario:
     filtros_selecionados = {}
     if cols_exist:
         l_cols = st.columns(len(cols_exist))
-        
         selecoes_ativas = {c: st.session_state.get(f"f_{c}", []) for c in cols_exist}
         
         for i, col in enumerate(cols_exist):
@@ -314,12 +364,12 @@ with aba_inventario:
         df_datas['Ano_Extraido'] = df_datas['Data (Busca)'].astype(str).str.extract(r'((?:18|19|20)\d{2})')
         df_anos = df_datas.dropna(subset=['Ano_Extraido'])
         if not df_anos.empty:
-            contagem_anos = df_anos['Ano_Extraido'].value_counts().reset_index()
-            contagem_anos.columns = ['Ano', 'Frequência']
-            fig_linha = px.line(contagem_anos.sort_values(by='Ano'), x='Ano', y='Frequência', markers=True, color_discrete_sequence=['#4ba3a6'])
-            fig_linha.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)'))
-            fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
-            st.plotly_chart(fig_linha, use_container_width=True)
+             contagem_anos = df_anos['Ano_Extraido'].value_counts().reset_index()
+             contagem_anos.columns = ['Ano', 'Frequência']
+             fig_linha = px.line(contagem_anos.sort_values(by='Ano'), x='Ano', y='Frequência', markers=True, color_discrete_sequence=['#4ba3a6'])
+             fig_linha.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)'))
+             fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
+             st.plotly_chart(fig_linha, use_container_width=True)
 
     elif visualizacao_selecionada != opcao_limpar:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
@@ -369,188 +419,165 @@ with aba_inventario:
             st.plotly_chart(fig_tema, use_container_width=True)
 
 # ============================================================
-# ABA 2: VISÃO GERAL DO ACERVO E OBSERVATÓRIO DATAVERSE
+# ABA 2: VISÃO GERAL DO ACERVO
 # ============================================================
 html_hierarquia = """
 <style>
-.hierarquia-acervo {
+.hierarquia-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+.colecao-card {
+    background: rgba(80, 120, 160, 0.05);
+    border: 1px solid rgba(120, 120, 160, 0.2);
+    border-radius: 12px;
+    padding: 20px;
     font-family: 'Source Serif 4', serif;
-    line-height: 1.35;
     font-size: 1rem;
-    color: inherit;
-    margin: 0;
-    padding: 0;
+    line-height: 1.4;
 }
-.hierarquia-acervo ul {
-    list-style-type: disc;
-    margin: 4px 0 8px 0;
-    padding-left: 24px;
-}
-.hierarquia-acervo ul ul {
-    list-style-type: circle;
-    margin: 4px 0 4px 0;
-    padding-left: 20px;
-}
-.hierarquia-acervo li {
-    margin-bottom: 4px;
-}
-.tag-container {
-    margin: 4px 0 10px 0;
-    padding-left: 0;
-}
-.tag-azul {
-    background-color: #2f6f8f;
-    color: white;
-    border-radius: 6px;
-    padding: 3px 9px;
-    font-size: 0.8rem;
-    display: inline-block;
-    line-height: 1.2;
-}
+.colecao-card ul { list-style-type: disc; margin: 8px 0; padding-left: 20px; }
+.colecao-card ul ul { list-style-type: circle; margin: 4px 0; padding-left: 20px; }
+.colecao-card li { margin-bottom: 6px; }
+.tag-container { margin: 6px 0 12px 0; padding-left: 0; }
+.tag-azul { background-color: #2f6f8f; color: white; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; display: inline-block; }
 </style>
 
-<div class="hierarquia-acervo">
-<strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)</strong>
-<ul>
-<li><strong>Série: Notícias (NOTICIAS)</strong>
-<ul>
-<li>Subsérie: Massacre do Carandiru
-<ul><li>Unidade documental: DVD Original</li></ul>
-</li>
-<li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)
-<ul><li>Unidade documental: DVD Original 2</li></ul>
-</li>
-</ul>
-<div class="tag-container">
-<span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
+<div class="hierarquia-grid">
+    <div class="colecao-card">
+        <strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado <span class="sigla-codigo">(GPDVE)</span></strong>
+        <ul>
+            <li><strong>Série: Notícias <span class="sigla-codigo">(NOTICIAS)</span></strong>
+                <ul>
+                    <li>Subsérie: Massacre do Carandiru
+                        <ul><li>Unidade documental: DVD Original</li></ul>
+                    </li>
+                </ul>
+                <div class="tag-container">
+                    <span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                </div>
+            </li>
+            <li><strong>Série: Filmes <span class="sigla-codigo">(FILMES)</span></strong>
+                <ul>
+                    <li>Subsérie: Penitenciária do Estado em 1928</li>
+                    <li>Subsérie: Direção de arte do filme Carandiru</li>
+                    <li>Subsérie: Slideshow e charge "Recado da Produção"</li>
+                    <li>Subsérie: Bastidores do filme Carandiru</li>
+                    <li>Subsérie: Filmes de Hector Babenco</li>
+                    <li>Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928".</li>
+                </ul>
+                <div class="tag-container">
+                    <span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                </div>
+            </li>
+            <li><strong>Série: Mapeamentos <span class="sigla-codigo">(MAPEAMENTOS)</span></strong>
+                <ul>
+                    <li>Subsérie: Rememorações do Massacre do Carandiru
+                        <div class="tag-container">
+                            <span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                        </div>
+                    </li>
+                    <li>Subsérie: Notícias Massacre da Penha
+                        <div class="tag-container">
+                            <span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span>
+                        </div>
+                    </li>
+                </ul>
+            </li>
+            <li><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong>
+                <ul>
+                    <li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li>
+                    <li>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)
+                        <ul><li>Unidade documental: DVD Original 2</li></ul>
+                    </li>
+                </ul>
+                <div class="tag-container">
+                    <span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                </div>
+            </li>
+        </ul>
+    </div>
 
-<li><strong>Série: Filmes (FILMES)</strong>
-<ul>
-<li>Subsérie: Penitenciária do Estado em 1928</li>
-<li>Subsérie: Direção de arte do filme Carandiru</li>
-<li>Subsérie: Slideshow e charge "Recado da Produção"</li>
-<li>Subsérie: Bastidores do filme Carandiru</li>
-<li>Subsérie: Filmes de Hector Babenco</li>
-<li>Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928".</li>
-</ul>
-<div class="tag-container">
-<span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
+    <div class="colecao-card">
+        <strong>Coleção: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong>
+        <ul>
+            <li><strong>Série: Companhia Paulista de Obras e Serviços <span class="sigla-codigo">(CPOS)</span></strong>
+                <ul>
+                    <li>Subsérie: Planta do Complexo do Carandiru</li>
+                </ul>
+                <div class="tag-container">
+                    <span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                </div>
+            </li>
+            <li><strong>Série: Diários Associados do Estado de São Paulo <span class="sigla-codigo">(DASP)</span></strong>
+                <ul>
+                    <li>Subsérie: Penitenciárias e Presídios - Casa de Detenção do Carandiru</li>
+                </ul>
+                <div class="tag-container">
+                    <span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
+                </div>
+            </li>
+        </ul>
+    </div>
 
-<li><strong>Série: Mapeamentos (MAPEAMENTOS)</strong>
-<ul>
-<li>Subsérie: Rememorações do Massacre do Carandiru
-<div class="tag-container">
-<span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
-<li>Subsérie: Notícias Massacre da Penha
-<div class="tag-container">
-<span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
-</ul>
-</li>
-
-<li><strong>Série: Arcoenge (ARCOENGE)</strong>
-<ul>
-<li>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</li>
-</ul>
-<div class="tag-container">
-<span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
-</ul>
-
-<strong>Coleção: Arquivo Público do Estado de São Paulo (APESP)</strong>
-<ul>
-<li><strong>Série: Companhia Paulista de Obras e Serviços (CPOS)</strong>
-<ul>
-<li>Subsérie: Planta do Complexo do Carandiru</li>
-</ul>
-<div class="tag-container">
-<span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
-<li><strong>Série: Diários Associados do Estado de São Paulo (DASP)</strong>
-<ul>
-<li>Subsérie: Penitenciárias e Presídios - Casa de Detenção do Carandiru</li>
-</ul>
-<div class="tag-container">
-<span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span>
-</div>
-</li>
-</ul>
-
-<strong>Coleção: Procedimentos judiciais e administrativos (PROCJURADM)</strong>
-<ul>
-<li><strong>Série: Tribunal de Justiça do Estado de São Paulo (TJSP)</strong>
-<ul>
-<li>Subsérie: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)</li>
-<li>Subsérie: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)</li>
-<li>Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)</li>
-</ul>
-</li>
-
-<li><strong>Série: Assembleia Legislativa do Estado de São Paulo (ALESP)</strong>
-<ul><li>Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)</li></ul>
-</li>
-
-<li><strong>Série: Ministério Público do Estado de São Paulo (MPSP)</strong>
-<ul><li>Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)</li></ul>
-</li>
-
-<li><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)</strong>
-<ul><li>Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)</li></ul>
-</li>
-
-<li><strong>Série: Ministério da Justiça (MINJUSTICA)</strong>
-<ul><li>Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)</li></ul>
-</li>
-
-<li><strong>Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)</strong>
-<ul><li>Subsérie: Processo de Tombamento (PROCTOM)</li></ul>
-</li>
-</ul>
+    <div class="colecao-card">
+        <strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong>
+        <ul>
+            <li><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong>
+                <ul>
+                    <li>Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></li>
+                    <li>Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></li>
+                    <li>Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></li>
+                </ul>
+            </li>
+            <li><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong>
+                <ul><li>Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></li></ul>
+            </li>
+            <li><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong>
+                <ul><li>Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></li></ul>
+            </li>
+            <li><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong>
+                <ul><li>Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></li></ul>
+            </li>
+            <li><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong>
+                <ul><li>Subsérie: Relatório Final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></li></ul>
+            </li>
+            <li><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong>
+                <ul><li>Subsérie: Processo de Tombamento <span class="sigla-codigo">(PROCTOM)</span></li></ul>
+            </li>
+        </ul>
+    </div>
 </div>
 """
 
 with aba_producao:
     st.markdown(html_hierarquia, unsafe_allow_html=True)
+
+# ============================================================
+# ABA 3: EQUIPE E OBSERVATÓRIO DATAVERSE
+# ============================================================
+with aba_equipe:
+    st.subheader(traduzir("Equipe do GPDVE"))
+    st.markdown(traduzir("Dados extraídos em tempo real da página oficial da FGV Direito SP."))
     
+    with st.spinner("Extraindo informações da web..."):
+        lista_equipe = extrair_equipe_fgv()
+        
+    for membro in lista_equipe:
+        st.markdown(f"- {membro}")
+
     st.markdown("---")
     
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
-    # Chama a chave nova salva nos segredos do Streamlit
     meu_token_api = st.secrets["api_dataverse"]
     
-    pesquisadoras_rastreadas = [
-        "Machado, Maíra Rocha", 
-        "Ferreira, Carolina Cutrupi",
-        "Ferreira, Luisa Moraes Abreu" 
-        "Tavolari, Bianca",
-        "Asperti, Cecília",
-        "Canheo, Roberta",
-        "Passos, Ana Beatriz",
-        "Plastino, Luisa Mozetic",
-        "Zambom, Mariana Morais",
-        "Balbuglio, Balbuglio",
-        "Castro, Maria Eduarda de",
-        "Santos, Natália Santana dos",
-        "Milfont, Iasmin",
-        "Moreira, Maria Cecília",
-        "Oliveira, Maria Luiza Silva",
-        "Monteiro, Maurício",
-        "Franco, Millena Miranda"
-    ]
-    
-    with st.spinner("Consultando o repositório..."):
-        df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
+    with st.spinner("Consultando o repositório utilizando a lista atualizada de pesquisadoras..."):
+        # Alimenta a função de busca no Dataverse dinamicamente com os nomes extraídos
+        df_producao = buscar_producao_autoras(meu_token_api, lista_equipe)
     
     if not df_producao.empty:
         st.data_editor(
@@ -561,7 +588,7 @@ with aba_producao:
         )
 
 # ============================================================
-# 7. RODAPÉ INSTITUCIONAL
+# RODAPÉ INSTITUCIONAL
 # ============================================================
 meses = ["jan.", "fev.", "mar.", "abr.", "maio", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."]
 data_atual = datetime.now()
@@ -575,8 +602,8 @@ rodape_html = f"""
         <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Autora:</strong> <a href="http://lattes.cnpq.br/3848824456283762" target="_blank" style="color: #4ba3a6; text-decoration: none;"><strong>Millena Miranda Franco</strong></a> | <a href="https://orcid.org/0000-0002-0292-0797" target="_blank" style="color: #4ba3a6;">ORCID</a> | <a href="https://bv.fapesp.br/pt/pesquisador/743339/millena-miranda-franco/" target="_blank" style="color: #4ba3a6;">BV FAPESP</a></p>
         <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Orientadora:</strong> <a href="http://lattes.cnpq.br/0553760669855058" target="_blank" style="color: #4ba3a6; text-decoration: none;"><strong>Maíra Rocha Machado</strong></a> | <a href="https://orcid.org/0000-0003-1303-5790" target="_blank" style="color: #4ba3a6;">ORCID</a> | <a href="https://bv.fapesp.br/pt/pesquisador/90750/maira-rocha-machado/" target="_blank" style="color: #4ba3a6;">BV FAPESP</a></p>
         <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Instituição-sede:</strong> Escola de Direito de São Paulo. Fundação Getulio Vargas (FGV). São Paulo, SP, Brasil</p>
-        <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Grupo de pesquisa:</strong> Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)</p>
-        <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Fomento:</strong> Fundação de Amparo à Pesquisa do Estado de São Paulo (FAPESP)</p>
+        <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Grupo de pesquisa:</strong> Grupo de Pesquisa em Direito e Violência de Estado <span class="sigla-codigo">(GPDVE)</span></p>
+        <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Fomento:</strong> Fundação de Amparo à Pesquisa do Estado de São Paulo <span class="sigla-codigo">(FAPESP)</span></p>
         <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Projeto:</strong> Organização e disponibilização pública de acervo documental envolvendo violência de Estado.</p>
         <p style="margin-bottom: 5px; line-height: 1.4;"><strong>Processo:</strong> 25/11544-9</p>
     </div>
