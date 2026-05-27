@@ -240,8 +240,10 @@ def extrair_equipe_fgv():
             raise ValueError("Falha na extração de texto estruturado.")
         return equipe_extraida
     except Exception:
-        # Fallback de segurança 
-        return [
+        # Chama a chave nova salva nos segredos do Streamlit
+    meu_token_api = st.secrets["api_dataverse"]
+    
+    pesquisadoras_rastreadas = [
             "Machado, Maíra Rocha", 
             "Ferreira, Carolina Cutrupi",
             "Ferreira, Luisa Moraes Abreu" 
@@ -259,7 +261,7 @@ def extrair_equipe_fgv():
             "Oliveira, Maria Luiza Silva",
             "Monteiro, Maurício",
             "Franco, Millena Miranda"
-        ]
+    ]
 
 # ============================================================
 # CABEÇALHO DO PROGRAMA
