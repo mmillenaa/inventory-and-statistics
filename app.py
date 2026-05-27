@@ -57,7 +57,7 @@ def traduzir(texto_pt):
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
-        "Equipe e Observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
+        "Equipe e observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
         "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {"English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.", "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."},
         "Observatório de bases publicadas pelo GPDVE no Dataverse": {"English": "Observatory of databases published by GPDVE on Dataverse", "Español": "Observatorio de bases de datos publicadas por GPDVE en Dataverse"},
         "Equipe do GPDVE": {"English": "GPDVE Team", "Español": "Equipo del GPDVE"},
@@ -264,7 +264,7 @@ st.caption(traduzir("O programa foi concebido para realizar análises estatísti
 aba_inventario, aba_producao, aba_equipe = st.tabs([
     traduzir("Inventário do acervo catalogado"), 
     traduzir("Visão geral do acervo"),
-    traduzir("Equipe e Observatório")
+    traduzir("Equipe e observatório")
 ])
 
 # ============================================================
@@ -419,85 +419,166 @@ with aba_inventario:
                 xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)')
             )
             st.plotly_chart(fig_tema, use_container_width=True)
-            
+
 import streamlit_antd_components as sac
 # ============================================================
-# ABA 2: VISÃO GERAL DO ACERVO (SUBSTITUIÇÃO PELO COMPONENTE TREE)
+# ABA 2: VISÃO GERAL DO ACERVO
 # ============================================================
-# O bloco HTML foi removido e substituído por estrutura nativa de árvore.
-# Capitalização ajustada estritamente para PT-BR (siglas e nomes próprios).
-# Emojis removidos.
+html_arvore = """
+<style>
+.arvore-acervo {
+font-family: 'Source Serif 4', serif;
+font-size: 1rem;
+line-height: 1.5;
+color: var(--text-color);
+}
+.arvore-acervo details {
+margin-left: 24px;
+margin-bottom: 2px;
+}
+.arvore-acervo summary {
+cursor: pointer;
+margin-bottom: 4px;
+outline: none;
+}
+.arvore-acervo summary:hover {
+color: #4ba3a6;
+}
+.item-simples {
+margin-left: 40px;
+margin-bottom: 4px;
+}
+.tag-azul {
+background-color: #2f6f8f;
+color: white;
+border-radius: 6px;
+padding: 4px 10px;
+font-size: 0.85rem;
+display: inline-block;
+margin-top: 2px;
+margin-bottom: 8px;
+font-family: 'IBM Plex Mono', monospace;
+}
+.sigla-codigo {
+font-family: 'IBM Plex Mono', monospace;
+color: #2F6F8F;
+font-weight: 600;
+font-size: 0.9em;
+background: rgba(47, 111, 143, 0.08);
+padding: 2px 5px;
+border-radius: 4px;
+}
+</style>
+
+<div class="arvore-acervo">
+
+<details>
+<summary><strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado <span class="sigla-codigo">(GPDVE)</span></strong></summary>
+
+<details>
+<summary><strong>Série: Notícias <span class="sigla-codigo">(NOTICIAS)</span></strong></summary>
+<details>
+<summary>Subsérie: Massacre do Carandiru</summary>
+<div class="item-simples">Unidade documental: DVD original</div>
+</details>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Filmes <span class="sigla-codigo">(FILMES)</span></strong></summary>
+<div class="item-simples">Subsérie: Penitenciária do Estado em 1928</div>
+<div class="item-simples">Subsérie: Direção de arte do filme Carandiru</div>
+<div class="item-simples">Subsérie: Slideshow e charge "Recado da produção"</div>
+<div class="item-simples">Subsérie: Bastidores do filme Carandiru</div>
+<div class="item-simples">Subsérie: Filmes de Hector Babenco</div>
+<div class="item-simples">Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928"</div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Mapeamentos <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
+<details>
+<summary>Subsérie: Rememorações do massacre do Carandiru</summary>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+<details>
+<summary>Subsérie: Notícias massacre da Penha</summary>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+</details>
+
+<details>
+<summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
+<div class="item-simples">Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</div>
+<details>
+<summary>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)</summary>
+<div class="item-simples">Unidade documental: DVD original 2</div>
+</details>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+
+</details>
+
+<details>
+<summary><strong>Coleção: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
+
+<details>
+<summary><strong>Série: Companhia Paulista de Obras e Serviços <span class="sigla-codigo">(CPOS)</span></strong></summary>
+<div class="item-simples">Subsérie: Planta do complexo do Carandiru</div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Diários Associados do Estado de São Paulo <span class="sigla-codigo">(DASP)</span></strong></summary>
+<div class="item-simples">Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru</div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+
+</details>
+
+<details>
+<summary><strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong></summary>
+
+<details>
+<summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
+<div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
+<div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
+<div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
+<div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
+</details>
+
+<details>
+<summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
+</details>
+
+</details>
+
+</div>
+"""
 
 with aba_producao:
-    sac.tree(items=[
-        sac.TreeItem('Coleção: Grupo de Pesquisa em Direito e Violência de Estado (GPDVE)', children=[
-            sac.TreeItem('Série: Notícias (NOTICIAS)', children=[
-                sac.TreeItem('Subsérie: Massacre do Carandiru', children=[
-                    sac.TreeItem('Unidade documental: DVD original')
-                ]),
-                sac.TreeItem('BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx') 
-            ]),
-            sac.TreeItem('Série: Filmes (FILMES)', children=[
-                sac.TreeItem('Subsérie: Penitenciária do Estado em 1928'),
-                sac.TreeItem('Subsérie: Direção de arte do filme Carandiru'),
-                sac.TreeItem('Subsérie: Slideshow e charge "Recado da produção"'),
-                sac.TreeItem('Subsérie: Bastidores do filme Carandiru'),
-                sac.TreeItem('Subsérie: Filmes de Hector Babenco'),
-                sac.TreeItem('Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928"'),
-                sac.TreeItem('BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx')
-            ]),
-            sac.TreeItem('Série: Mapeamentos (MAPEAMENTOS)', children=[
-                sac.TreeItem('Subsérie: Rememorações do massacre do Carandiru', children=[
-                    sac.TreeItem('BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx')
-                ]),
-                sac.TreeItem('Subsérie: Notícias massacre da Penha', children=[
-                    sac.TreeItem('BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx')
-                ])
-            ]),
-            sac.TreeItem('Série: Arcoenge (ARCOENGE)', children=[
-                sac.TreeItem('Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru'),
-                sac.TreeItem('Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)', children=[
-                    sac.TreeItem('Unidade documental: DVD original 2')
-                ]),
-                sac.TreeItem('BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx')
-            ])
-        ]),
-        
-        sac.TreeItem('Coleção: Arquivo Público do Estado de São Paulo (APESP)', children=[
-            sac.TreeItem('Série: Companhia Paulista de Obras e Serviços (CPOS)', children=[
-                sac.TreeItem('Subsérie: Planta do complexo do Carandiru'),
-                sac.TreeItem('BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx')
-            ]),
-            sac.TreeItem('Série: Diários Associados do Estado de São Paulo (DASP)', children=[
-                sac.TreeItem('Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru'),
-                sac.TreeItem('BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx')
-            ])
-        ]),
-        
-        sac.TreeItem('Coleção: Procedimentos judiciais e administrativos (PROCJURADM)', children=[
-            sac.TreeItem('Série: Tribunal de Justiça do Estado de São Paulo (TJSP)', children=[
-                sac.TreeItem('Subsérie: Processo criminal contra 120 policiais militares (PROCRIM-POLMIL)'),
-                sac.TreeItem('Subsérie: Sindicância da Corregedoria dos Presídios de 1992 (SINDIC-CORREGEDPRES)'),
-                sac.TreeItem('Subsérie: Processos cíveis de indenização por danos materiais e morais (PROCCIVEL)')
-            ]),
-            sac.TreeItem('Série: Assembleia Legislativa do Estado de São Paulo (ALESP)', children=[
-                sac.TreeItem('Subsérie: Comissão Parlamentar de Inquérito de 1992 (CPI)')
-            ]),
-            sac.TreeItem('Série: Ministério Público do Estado de São Paulo (MPSP)', children=[
-                sac.TreeItem('Subsérie: Inquérito Civil Público de 1992 (INQCIVPUBLICO)')
-            ]),
-            sac.TreeItem('Série: Tribunal de Justiça Militar do Estado de São Paulo (TJMSP)', children=[
-                sac.TreeItem('Subsérie: Sindicância Justiça Militar de 1992 (SINDIC-TJM)')
-            ]),
-            sac.TreeItem('Série: Ministério da Justiça (MINJUSTICA)', children=[
-                sac.TreeItem('Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária (RELFINAL-CNPCP)')
-            ]),
-            sac.TreeItem('Série: Conselho Municipal de Preservação do Patrimônio (CONPRESPSP)', children=[
-                sac.TreeItem('Subsérie: Processo de tombamento (PROCTOM)')
-            ])
-        ])
-    ], open_all=False) # Configurado como recolhido para melhor usabilidade na visualização
-
+    st.markdown(html_arvore, unsafe_allow_html=True)
+    
 # ============================================================
 # ABA 3: EQUIPE E OBSERVATÓRIO DATAVERSE
 # ============================================================
