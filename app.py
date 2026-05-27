@@ -432,7 +432,7 @@ html_hierarquia = """
 <li>Subsérie: Direção de arte do filme Carandiru</li>
 <li>Subsérie: Slideshow e charge "Recado da Produção"</li>
 <li>Subsérie: Bastidores do filme Carandiru</li>
-<li>Subsérie: Filmes de Hector Bebenco</li>
+<li>Subsérie: Filmes de Hector Babenco</li>
 <li>Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928".</li>
 </ul>
 <div class="tag-container">
@@ -531,8 +531,22 @@ with aba_producao:
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
-        "Ferreira, Carolina Cutrupi", 
-        "Tavolari, Bianca"
+        "Ferreira, Carolina Cutrupi",
+        "Ferreira, Luisa Moraes Abreu" 
+        "Tavolari, Bianca",
+        "Asperti, Cecília",
+        "Canheo, Roberta",
+        "Passos, Ana Beatriz",
+        "Plastino, Luisa Mozetic",
+        "Zambom, Mariana Morais",
+        "Balbuglio, Balbuglio",
+        "Castro, Maria Eduarda de",
+        "Santos, Natália Santana dos",
+        "Milfont, Iasmin",
+        "Moreira, Maria Cecília",
+        "Oliveira, Maria Luiza Silva",
+        "Monteiro, Maurício",
+        "Franco, Millena Miranda"
     ]
     
     with st.spinner("Consultando o repositório..."):
