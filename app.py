@@ -57,7 +57,7 @@ def traduzir(texto_pt):
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
-        "Equipe e observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
+        "Equipe e Observatório": {"English": "Team and Observatory", "Español": "Equipo y Observatorio"},
         "O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa.": {"English": "The programme was designed to perform statistical analyses on structured and standardised databases, specifically aimed at the cataloguing and archival description of documents, allowing transversal visualisations of metadata and research instruments.", "Español": "El programa fue diseñado para realizar análisis estadísticos sobre bases de datos estructuradas y estandarizadas, específicamente dirigidas a la catalogación y descripción archivística de documentos, permitiendo visualizaciones transversales de metadatos e instrumentos de investigación."},
         "Observatório de bases publicadas pelo GPDVE no Dataverse": {"English": "Observatory of databases published by GPDVE on Dataverse", "Español": "Observatorio de bases de datos publicadas por GPDVE en Dataverse"},
         "Equipe do GPDVE": {"English": "GPDVE Team", "Español": "Equipo del GPDVE"},
@@ -115,8 +115,8 @@ span[data-baseweb="tag"] span { color: white !important; }
 /* Estilização das Siglas e Códigos */
 .sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
 
-/* CSS da Equipe */
-.equipe-item { font-family: 'Source Serif 4', serif; letter-spacing: -0.3px; font-size: 1.05rem; line-height: 1.6; margin-bottom: 4px; }
+/* CSS da Equipe - Ajustado para numeração e espaçamento */
+.equipe-item { font-family: 'Source Serif 4', serif; letter-spacing: -0.2px; font-size: 1.05rem; line-height: 1.5; margin-bottom: 6px; }
 
 /* Correções de Responsividade Mobile */
 @media (max-width: 768px) {
@@ -243,7 +243,6 @@ def extrair_equipe_fgv():
             raise ValueError("Falha na extração de texto estruturado.")
         return equipe_extraida
     except Exception:
-        # Fallback de segurança 
         return [
             "Maíra Rocha Machado", "Carolina Cutrupi Ferreira", "Luisa Moraes Abreu Ferreira",
             "Cecília Asperti", "Bianca Tavolari", "Roberta Canheo", "Ana Beatriz Passos",
@@ -265,7 +264,7 @@ st.caption(traduzir("O programa foi concebido para realizar análises estatísti
 aba_inventario, aba_producao, aba_equipe = st.tabs([
     traduzir("Inventário do acervo catalogado"), 
     traduzir("Visão geral do acervo"),
-    traduzir("Equipe e observatório")
+    traduzir("Equipe e Observatório")
 ])
 
 # ============================================================
@@ -568,11 +567,16 @@ with aba_equipe:
     with st.spinner("Extraindo informações da web..."):
         lista_equipe = extrair_equipe_fgv()
         
-    # Organiza a equipe em 3 colunas, usando HTML/CSS para remover bullets e ajustar espaçamento
+    # Lógica estruturada para distribuição exata de itens (6, 6, 7) e numeração sequencial
     colunas_equipe = st.columns(3)
-    for i, membro in enumerate(lista_equipe):
-        with colunas_equipe[i % 3]:
-            st.markdown(f"<div class='equipe-item'>— {membro}</div>", unsafe_allow_html=True)
+    fatias_lista = [lista_equipe[:6], lista_equipe[6:12], lista_equipe[12:]]
+    contador = 1
+    
+    for idx_coluna, st_col in enumerate(colunas_equipe):
+        with st_col:
+            for membro in fatias_lista[idx_coluna]:
+                st.markdown(f"<div class='equipe-item'><strong>{contador}.</strong> {membro}</div>", unsafe_allow_html=True)
+                contador += 1
 
     st.markdown("<br><hr>", unsafe_allow_html=True)
     
@@ -581,7 +585,6 @@ with aba_equipe:
     
     meu_token_api = st.secrets["api_dataverse"]
     
-    # Restaura a lista estruturada exata solicitada (com a correção da vírgula faltante na linha 3)
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
         "Ferreira, Carolina Cutrupi",
