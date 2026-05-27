@@ -115,6 +115,9 @@ span[data-baseweb="tag"] span { color: white !important; }
 /* Estilização das Siglas e Códigos */
 .sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
 
+/* CSS da Equipe */
+.equipe-item { font-family: 'Source Serif 4', serif; letter-spacing: -0.3px; font-size: 1.05rem; line-height: 1.6; margin-bottom: 4px; }
+
 /* Correções de Responsividade Mobile */
 @media (max-width: 768px) {
     .block-container { padding-top: 1rem !important; padding-left: 1rem !important; padding-right: 1rem !important; }
@@ -240,28 +243,14 @@ def extrair_equipe_fgv():
             raise ValueError("Falha na extração de texto estruturado.")
         return equipe_extraida
     except Exception:
-        # Chama a chave nova salva nos segredos do Streamlit
-    meu_token_api = st.secrets["api_dataverse"]
-    
-    pesquisadoras_rastreadas = [
-            "Machado, Maíra Rocha", 
-            "Ferreira, Carolina Cutrupi",
-            "Ferreira, Luisa Moraes Abreu" 
-            "Tavolari, Bianca",
-            "Asperti, Cecília",
-            "Canheo, Roberta",
-            "Passos, Ana Beatriz",
-            "Plastino, Luisa Mozetic",
-            "Zambom, Mariana Morais",
-            "Balbuglio, Balbuglio",
-            "Castro, Maria Eduarda de",
-            "Santos, Natália Santana dos",
-            "Milfont, Iasmin",
-            "Moreira, Maria Cecília",
-            "Oliveira, Maria Luiza Silva",
-            "Monteiro, Maurício",
-            "Franco, Millena Miranda"
-    ]
+        # Fallback de segurança 
+        return [
+            "Maíra Rocha Machado", "Carolina Cutrupi Ferreira", "Luisa Moraes Abreu Ferreira",
+            "Cecília Asperti", "Bianca Tavolari", "Roberta Canheo", "Ana Beatriz Passos",
+            "Luisa Plastino", "Mariana Zambom", "Viviane Balbuglio", "Maria Eduarda de Castro",
+            "Natalia Santana", "Luciano Pinheiro", "Iasmin Milfont", "Beatriz de Paula",
+            "Cecília Moreira", "Maria Luiza Silva Oliveira", "Maurício Monteiro", "Millena Franco"
+        ]
 
 # ============================================================
 # CABEÇALHO DO PROGRAMA
@@ -513,6 +502,7 @@ html_hierarquia = """
             </li>
         </ul>
     </div>
+
     <div class="colecao-card">
         <strong>Coleção: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong>
         <ul>
@@ -534,6 +524,7 @@ html_hierarquia = """
             </li>
         </ul>
     </div>
+
     <div class="colecao-card">
         <strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong>
         <ul>
@@ -577,19 +568,42 @@ with aba_equipe:
     with st.spinner("Extraindo informações da web..."):
         lista_equipe = extrair_equipe_fgv()
         
-    for membro in lista_equipe:
-        st.markdown(f"- {membro}")
+    # Organiza a equipe em 3 colunas, usando HTML/CSS para remover bullets e ajustar espaçamento
+    colunas_equipe = st.columns(3)
+    for i, membro in enumerate(lista_equipe):
+        with colunas_equipe[i % 3]:
+            st.markdown(f"<div class='equipe-item'>— {membro}</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<br><hr>", unsafe_allow_html=True)
     
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
     meu_token_api = st.secrets["api_dataverse"]
     
-    with st.spinner("Consultando o repositório utilizando a lista atualizada de pesquisadoras..."):
-        # Alimenta a função de busca no Dataverse dinamicamente com os nomes extraídos
-        df_producao = buscar_producao_autoras(meu_token_api, lista_equipe)
+    # Restaura a lista estruturada exata solicitada (com a correção da vírgula faltante na linha 3)
+    pesquisadoras_rastreadas = [
+        "Machado, Maíra Rocha", 
+        "Ferreira, Carolina Cutrupi",
+        "Ferreira, Luisa Moraes Abreu",
+        "Tavolari, Bianca",
+        "Asperti, Cecília",
+        "Canheo, Roberta",
+        "Passos, Ana Beatriz",
+        "Plastino, Luisa Mozetic",
+        "Zambom, Mariana Morais",
+        "Balbuglio, Balbuglio",
+        "Castro, Maria Eduarda de",
+        "Santos, Natália Santana dos",
+        "Milfont, Iasmin",
+        "Moreira, Maria Cecília",
+        "Oliveira, Maria Luiza Silva",
+        "Monteiro, Maurício",
+        "Franco, Millena Miranda"
+    ]
+    
+    with st.spinner("Consultando o repositório..."):
+        df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
     
     if not df_producao.empty:
         st.data_editor(
