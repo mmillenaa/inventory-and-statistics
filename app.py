@@ -5,7 +5,6 @@ from datetime import datetime
 import re
 import os
 import requests
-import streamlit_antd_components as sac
 from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPDVE")
