@@ -439,46 +439,9 @@ with aba_inventario:
         ax.axis('off')
         fig.patch.set_alpha(0) 
         st.pyplot(fig)
-    
         
-        # Função segura para contar menções nos textos
-        def contar_local(df, palavras_chave):
-            texto = df['Conteúdo (Busca)'].fillna('').astype(str) + " " + df['Título (Busca)'].fillna('').astype(str)
-            if 'Palavras-chave' in df.columns:
-                texto += " " + df['Palavras-chave'].fillna('').astype(str)
-                
-            mask = texto.str.lower().str.contains('|'.join(palavras_chave), regex=True, na=False)
-            return mask.sum()
-        
-        contagens = {}
-        for nome, info in locais.items():
-            contagens[nome] = contar_local(df_filtrado, info["palavras"])
-    
-        # Criar mapa centrado no eixo Rio-SP
-        m = folium.Map(location=[-23.0, -45.0], zoom_start=7)
-        
-        for nome, coords in locais.items():
-            folium.Marker(
-                location=[coords["lat"], coords["lon"]],
-                popup=f"<div style='width: max-content; font-family: sans-serif;'><b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}</div>",
-                icon=folium.Icon(color="darkred", icon="info-sign")
-            ).add_to(m)
-        
-        # Força a renderização do HTML estruturado completo (resolve a tela em branco)
-        mapa_html = m.get_root().render()
-        components.html(mapa_html, height=480)
-        
-        st.caption(f"**Carandiru (SP):** {contagens['Tema: Massacre do Carandiru (SP)']} menções | **Penha (RJ):** {contagens['Tema: Massacre da Penha (RJ)']} menções encontradas.")
-
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
-    df_exibicao.index += 1
-    st.dataframe(df_exibicao, use_container_width=True, height=350)
-
-    st.subheader(traduzir("Instrumentos de pesquisa"))
-    
-    tamanho_est_mb = max(0.01, len(df_filtrado['Arquivo_origem'].unique()) * 0.05)
-    st.markdown(f"**Tamanho estimado do arquivo:** ~{tamanho_est_mb:.2f} MB")
 
     if st.button(traduzir("Gerar inventário do acervo")):
         if df_filtrado.empty:
