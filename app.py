@@ -382,7 +382,9 @@ with aba_inventario:
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (título e descrição)", "Mapa temático (Série Mapeamentos)"]
+    
+    # Menu atualizado: removido o "Mapa temático"
+    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
@@ -400,9 +402,8 @@ with aba_inventario:
 
     elif visualizacao_selecionada in dicionario_tematico:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
+        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
         
-        # Aplicamos o mesmo stemmer da busca avançada para o gráfico contar variações e plurais
         stemmer = get_stemmer()
         texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
         
@@ -417,21 +418,18 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == "Nuvem de palavras (título e descrição)":
+    elif visualizacao_selecionada == "Nuvem de palavras":
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
-        # Coletar texto de campos relevantes de forma segura
         textos_lista = df_filtrado['Conteúdo (Busca)'].dropna().astype(str).tolist() + \
                        df_filtrado['Título (Busca)'].dropna().astype(str).tolist()
         
-        # Só tenta pegar as Palavras-chave se a coluna realmente existir na planilha
         if 'Palavras-chave' in df_filtrado.columns:
             textos_lista += df_filtrado['Palavras-chave'].dropna().astype(str).tolist()
             
         texto_completo = " ".join(textos_lista)
         
-        # Opcional: remover stopwords em português (incluindo nan e falhas de busca)
         stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
     
         wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
@@ -439,26 +437,9 @@ with aba_inventario:
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.imshow(wordcloud, interpolation='bilinear')
         ax.axis('off')
-        fig.patch.set_alpha(0) # Força o fundo da figura a ficar transparente no modo escuro
+        fig.patch.set_alpha(0) 
         st.pyplot(fig)
     
-    elif visualizacao_selecionada == "Mapa temático (Série Mapeamentos)":
-        import folium
-        import streamlit.components.v1 as components
-        
-        # Coordenadas fixas e abstratas dos dois grandes temas do grupo
-        locais = {
-            "Tema: Massacre do Carandiru (SP)": {
-                "lat": -23.5005, 
-                "lon": -46.6255, 
-                "palavras": ["carandiru", "casa de detenção", "pavilhão 9", "massacre de 1992"]
-            },
-            "Tema: Massacre da Penha (RJ)": {
-                "lat": -22.8441, 
-                "lon": -43.2950, 
-                "palavras": ["penha", "massacre da penha", "costa e silva", "chacina"]
-            }
-        }
         
         # Função segura para contar menções nos textos
         def contar_local(df, palavras_chave):
