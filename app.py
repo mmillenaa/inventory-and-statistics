@@ -445,7 +445,7 @@ with aba_inventario:
         fig.patch.set_alpha(0) # Força o fundo da figura a ficar transparente no modo escuro
         st.pyplot(fig)
     
-    elif visualizacao_selecionada == "Mapa temático (Carandiru e Penha)":
+    elif visualizacao_selecionada == "Mapa temático (Série Mapeamentos)":
         import folium
         import streamlit.components.v1 as components
         
