@@ -384,7 +384,7 @@ with aba_inventario:
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
     
     # Menu atualizado: removido o "Mapa temático"
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras"]
+    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (título e conteúdo)"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
@@ -418,7 +418,7 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == "Nuvem de palavras":
+    elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
