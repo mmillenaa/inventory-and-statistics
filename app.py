@@ -33,9 +33,9 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPD
 # ============================================================
 def check_password():
     def password_entered():
-        if st.session_state["input_senha"] == st.secrets["senha_porta"]:
+        # Usa .get() para evitar o KeyError caso a variável não exista na sessão
+        if st.session_state.get("input_senha") == st.secrets["senha_porta"]:
             st.session_state["password_correct"] = True
-            del st.session_state["input_senha"]
         else:
             st.session_state["password_correct"] = False
 
@@ -50,9 +50,6 @@ def check_password():
         return False
     else:
         return True
-
-if not check_password():
-    st.stop()
 
 # ============================================================
 # CONTROLES SUPERIORES E IDIOMA
@@ -482,13 +479,13 @@ with aba_inventario:
         for nome, coords in locais.items():
             folium.Marker(
                 location=[coords["lat"], coords["lon"]],
-                # Largura forçada para o popup não ficar esmagado
-                popup=f"<div style='width: max-content'><b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}</div>",
+                popup=f"<div style='width: max-content; font-family: sans-serif;'><b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}</div>",
                 icon=folium.Icon(color="darkred", icon="info-sign")
             ).add_to(m)
         
-        # Renderização HTML nativa (NÃO precisa do pacote streamlit-folium)
-        components.html(m._repr_html_(), height=460)
+        # Força a renderização do HTML estruturado completo (resolve a tela em branco)
+        mapa_html = m.get_root().render()
+        components.html(mapa_html, height=480)
         
         st.caption(f"**Carandiru (SP):** {contagens['Tema: Massacre do Carandiru (SP)']} menções | **Penha (RJ):** {contagens['Tema: Massacre da Penha (RJ)']} menções encontradas.")
 
