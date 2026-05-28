@@ -7,3 +7,5 @@ beautifulsoup4
 python-docx
 streamlit-antd-components
 nltk
+WordCloud
+folium
