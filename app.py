@@ -385,7 +385,7 @@ with aba_inventario:
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras", "Mapa temático (Carandiru e Penha)"]
+    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (descrição)", "Mapa temático (endereços citados)"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
