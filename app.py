@@ -403,7 +403,7 @@ with aba_inventario:
 
     elif visualizacao_selecionada != opcao_limpar:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
+        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str).str.lower())
         
         contagem_termos = {}
         for palavra in palavras_chave:
