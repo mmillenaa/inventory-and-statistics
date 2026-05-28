@@ -385,7 +385,7 @@ with aba_inventario:
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (descrição)", "Mapa temático"]
+    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (título e descrição)", "Mapa temático (Série Mapeamentos)"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
@@ -420,7 +420,7 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == "Nuvem de palavras (descrição)":
+    elif visualizacao_selecionada == "Nuvem de palavras (título e descrição)":
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
@@ -445,19 +445,30 @@ with aba_inventario:
         fig.patch.set_alpha(0) # Força o fundo da figura a ficar transparente no modo escuro
         st.pyplot(fig)
     
-    elif visualizacao_selecionada == "Mapa temático":
+    elif visualizacao_selecionada == "Mapa temático (Carandiru e Penha)":
         import folium
         from streamlit_folium import folium_static
         
-        # Coordenadas aproximadas
+        # Coordenadas fixas e abstratas dos dois grandes temas do grupo
         locais = {
-            "Carandiru (SP)": {"lat": -23.5005, "lon": -46.6255, "palavras": ["carandiru", "casa de detenção", "complexo do carandiru"]},
-            "Penha (RJ)": {"lat": -22.8441, "lon": -43.2950, "palavras": ["penha", "massacre da penha", "costa e silva", "costa&silva"]}
+            "Tema: Massacre do Carandiru (SP)": {
+                "lat": -23.5005, 
+                "lon": -46.6255, 
+                "palavras": ["carandiru", "casa de detenção", "pavilhão 9", "massacre de 1992"]
+            },
+            "Tema: Massacre da Penha (RJ)": {
+                "lat": -22.8441, 
+                "lon": -43.2950, 
+                "palavras": ["penha", "massacre da penha", "costa e silva", "chacina"]
+            }
         }
         
-        # Contar documentos que mencionam cada local (nas colunas de texto)
+        # Função segura para contar menções nos textos (ignorando colunas que não existem)
         def contar_local(df, palavras_chave):
-            texto = df['Conteúdo (Busca)'].fillna('') + " " + df['Título (Busca)'].fillna('') + " " + df.get('Palavras-chave', '').fillna('')
+            texto = df['Conteúdo (Busca)'].fillna('').astype(str) + " " + df['Título (Busca)'].fillna('').astype(str)
+            if 'Palavras-chave' in df.columns:
+                texto += " " + df['Palavras-chave'].fillna('').astype(str)
+                
             mask = texto.str.lower().str.contains('|'.join(palavras_chave), regex=True, na=False)
             return mask.sum()
         
@@ -465,17 +476,18 @@ with aba_inventario:
         for nome, info in locais.items():
             contagens[nome] = contar_local(df_filtrado, info["palavras"])
     
-        # Criar mapa centrado em SP (mas visão geral)
-        m = folium.Map(location=[-23.5, -46.5], zoom_start=10)
+        # Criar mapa centrado no eixo Rio-SP
+        m = folium.Map(location=[-23.0, -45.0], zoom_start=7)
+        
         for nome, coords in locais.items():
             folium.Marker(
                 location=[coords["lat"], coords["lon"]],
-                popup=f"{nome}<br>Documentos: {contagens[nome]}",
+                popup=f"<b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}",
                 icon=folium.Icon(color="darkred", icon="info-sign")
             ).add_to(m)
         
         folium_static(m, width=700, height=450)
-        st.caption(f"**Carandiru (SP):** {contagens['Carandiru (SP)']} documentos | **Penha (RJ):** {contagens['Penha (RJ)']} documentos")
+        st.caption(f"**Carandiru (SP):** {contagens['Tema: Massacre do Carandiru (SP)']} menções | **Penha (RJ):** {contagens['Tema: Massacre da Penha (RJ)']} menções encontradas.")
 
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
