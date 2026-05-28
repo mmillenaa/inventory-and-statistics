@@ -401,13 +401,18 @@ with aba_inventario:
              fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
              st.plotly_chart(fig_linha, use_container_width=True)
 
-    elif visualizacao_selecionada != opcao_limpar:
+    elif visualizacao_selecionada in dicionario_tematico:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str).str.lower())
+        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
+        
+        # Aplicamos o mesmo stemmer da busca avançada para o gráfico contar variações e plurais
+        stemmer = get_stemmer()
+        texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
         
         contagem_termos = {}
         for palavra in palavras_chave:
-            ocorrencias = len(re.findall(rf'\b{palavra.lower()}\b', texto_combinado))
+            palavra_stem = normalizar_texto(palavra, stemmer)
+            ocorrencias = len(re.findall(rf'\b{palavra_stem}\b', texto_combinado_normal))
             contagem_termos[palavra] = ocorrencias
         
         fig_tema = px.bar(pd.DataFrame(list(contagem_termos.items()), columns=['Termo', 'Frequência']), x='Termo', y='Frequência', text='Frequência', color='Frequência', color_continuous_scale=['#16324F', '#235789', '#2F6F8F', '#4BA3A6', '#7BC6CC'])
@@ -480,10 +485,20 @@ with aba_inventario:
     if st.button(traduzir("Gerar inventário do acervo")):
         if df_filtrado.empty:
             st.warning("Não há registros para exportar com os filtros atuais.")
+        elif visualizacao_selecionada not in dicionario_tematico:
+            st.warning("Para gerar o gráfico estatístico do inventário, primeiro selecione um eixo temático específico (Família, Arquitetura, etc.) no menu de visualizações acima.")
         else:
             palavras_chave = dicionario_tematico[visualizacao_selecionada]
-            texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str).str.lower())
-            contagem_termos = {palavra: texto_combinado.count(palavra.lower()) for palavra in palavras_chave}
+            texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
+            
+            # Igualando a contagem do exportar com a da tela
+            stemmer = get_stemmer()
+            texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
+            
+            contagem_termos = {}
+            for palavra in palavras_chave:
+                palavra_stem = normalizar_texto(palavra, stemmer)
+                contagem_termos[palavra] = len(re.findall(rf'\b{palavra_stem}\b', texto_combinado_normal))
             
             df_estatistica = pd.DataFrame(list(contagem_termos.items()), columns=['Termo do eixo', 'Frequência'])
             fig_tema = px.bar(
