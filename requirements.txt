@@ -10,3 +10,4 @@ wordcloud
 folium
 streamlit-folium
 matplotlib
+folium

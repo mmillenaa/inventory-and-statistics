@@ -447,7 +447,7 @@ with aba_inventario:
     
     elif visualizacao_selecionada == "Mapa temático (Carandiru e Penha)":
         import folium
-        from streamlit_folium import folium_static
+        import streamlit.components.v1 as components
         
         # Coordenadas fixas e abstratas dos dois grandes temas do grupo
         locais = {
@@ -463,7 +463,7 @@ with aba_inventario:
             }
         }
         
-        # Função segura para contar menções nos textos (ignorando colunas que não existem)
+        # Função segura para contar menções nos textos
         def contar_local(df, palavras_chave):
             texto = df['Conteúdo (Busca)'].fillna('').astype(str) + " " + df['Título (Busca)'].fillna('').astype(str)
             if 'Palavras-chave' in df.columns:
@@ -482,11 +482,14 @@ with aba_inventario:
         for nome, coords in locais.items():
             folium.Marker(
                 location=[coords["lat"], coords["lon"]],
-                popup=f"<b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}",
+                # Largura forçada para o popup não ficar esmagado
+                popup=f"<div style='width: max-content'><b>{nome}</b><br>Documentos abordando o tema: {contagens[nome]}</div>",
                 icon=folium.Icon(color="darkred", icon="info-sign")
             ).add_to(m)
         
-        folium_static(m, width=700, height=450)
+        # Renderização HTML nativa (NÃO precisa do pacote streamlit-folium)
+        components.html(m._repr_html_(), height=460)
+        
         st.caption(f"**Carandiru (SP):** {contagens['Tema: Massacre do Carandiru (SP)']} menções | **Penha (RJ):** {contagens['Tema: Massacre da Penha (RJ)']} menções encontradas.")
 
     st.subheader(traduzir("Visualização detalhada"))
