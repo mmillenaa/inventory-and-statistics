@@ -8,4 +8,4 @@ python-docx
 streamlit-antd-components
 nltk
 WordCloud
-folium
+folium_static
