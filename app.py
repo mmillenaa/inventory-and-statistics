@@ -6,6 +6,25 @@ import re
 import os
 import requests
 from bs4 import BeautifulSoup
+import nltk
+from nltk.stem import RSLPStemmer
+import unicodedata
+
+# Baixar recurso uma vez (cache)
+@st.cache_resource
+def get_stemmer():
+    nltk.download('rslp', quiet=True)
+    return RSLPStemmer()
+
+def normalizar_texto(texto, stemmer):
+    """Remove acentos, converte para minúsculo e aplica stemming."""
+    if not isinstance(texto, str):
+        return ""
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('utf-8')
+    texto = texto.lower()
+    palavras = re.findall(r'\b[a-zA-Záéíóúâêôãõç]+\b', texto)
+    palavras_stem = [stemmer.stem(p) for p in palavras]
+    return ' '.join(palavras_stem)
 
 st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPDVE")
 
@@ -274,7 +293,7 @@ with aba_inventario:
     dicionario_tematico = {
         "Família": ["mãe", "filho", "criança", "pai", "avó"],
         "Educação, artes e ofícios": ["escola", "alfabetização", "atividade cultural", "costura"],
-        "Arquitetura prisional": ["grade", "cela", "janela", "parede", "portão"]
+        "Arquitetura prisional": ["grade", "cela", "pavilhão", "parede", "portão"]
     }
 
     pasta_acervo = "."
@@ -295,9 +314,18 @@ with aba_inventario:
     df_filtrado = df_consolidado.copy()
 
     if termo:
-        df_filtrado['SUPER_STRING'] = df_filtrado.apply(lambda row: ' '.join(row.dropna().astype(str)), axis=1)
-        mask = df_filtrado['SUPER_STRING'].str.contains(rf'\b{termo}\b', case=False, regex=True)
-        df_filtrado = df_filtrado[mask].drop(columns=['SUPER_STRING'])
+        stemmer = get_stemmer()
+        # Normaliza e stemiza cada palavra do termo separadamente
+        termo_normal = normalizar_texto(termo, stemmer)  # já remove acentos, minúsculas
+        termo_stem = ' '.join([stemmer.stem(p) for p in termo_normal.split()])
+        
+        df_filtrado['NORMAL_BUSCA'] = df_filtrado.apply(
+            lambda row: normalizar_texto(' '.join(row.dropna().astype(str)), stemmer), axis=1
+        )
+        # Cria padrão regex para cada palavra stemizada
+        padrao = r'\b' + r'\b|\b'.join(termo_stem.split()) + r'\b'
+        mask = df_filtrado['NORMAL_BUSCA'].str.contains(padrao, regex=True, na=False)
+        df_filtrado = df_filtrado[mask].drop(columns=['NORMAL_BUSCA'])
 
     st.subheader(traduzir("Filtros categoriais"))
     cols_int = ['Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro', 'Arquivo_origem']
@@ -357,7 +385,7 @@ with aba_inventario:
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys())
+    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras", "Mapa temático (Carandiru e Penha)"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
@@ -375,7 +403,7 @@ with aba_inventario:
 
     elif visualizacao_selecionada != opcao_limpar:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
+        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
         
         contagem_termos = {}
         for palavra in palavras_chave:
@@ -386,6 +414,58 @@ with aba_inventario:
         fig_tema.update_traces(textposition='outside')
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
+
+    elif visualizacao_selecionada == "Nuvem de palavras":
+        from wordcloud import WordCloud
+        import matplotlib.pyplot as plt
+        
+        # Coletar texto de campos relevantes
+        textos = df_filtrado['Conteúdo (Busca)'].fillna('') + " " + \
+                df_filtrado['Título (Busca)'].fillna('') + " " + \
+                df_filtrado.get('Palavras-chave', pd.Series([''])).fillna('')
+        texto_completo = " ".join(textos.astype(str))
+        
+        # Opcional: remover stopwords em português (adicione uma lista simples ou use nltk)
+        stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas"])
+    
+        wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
+    
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
+        st.pyplot(fig)
+    
+    elif visualizacao_selecionada == "Mapa temático (Carandiru e Penha)":
+        import folium
+        from streamlit_folium import folium_static
+        
+        # Coordenadas aproximadas
+        locais = {
+            "Carandiru (SP)": {"lat": -23.5005, "lon": -46.6255, "palavras": ["carandiru", "casa de detenção", "complexo do carandiru"]},
+            "Penha (RJ)": {"lat": -22.8441, "lon": -43.2950, "palavras": ["penha", "massacre da penha", "costa e silva", "costa&silva"]}
+        }
+        
+        # Contar documentos que mencionam cada local (nas colunas de texto)
+        def contar_local(df, palavras_chave):
+            texto = df['Conteúdo (Busca)'].fillna('') + " " + df['Título (Busca)'].fillna('') + " " + df.get('Palavras-chave', '').fillna('')
+            mask = texto.str.lower().str.contains('|'.join(palavras_chave), regex=True, na=False)
+            return mask.sum()
+        
+        contagens = {}
+        for nome, info in locais.items():
+            contagens[nome] = contar_local(df_filtrado, info["palavras"])
+    
+        # Criar mapa centrado em SP (mas visão geral)
+        m = folium.Map(location=[-23.5, -46.5], zoom_start=10)
+        for nome, coords in locais.items():
+            folium.Marker(
+                location=[coords["lat"], coords["lon"]],
+                popup=f"{nome}<br>Documentos: {contagens[nome]}",
+                icon=folium.Icon(color="darkred", icon="info-sign")
+            ).add_to(m)
+        
+        folium_static(m, width=700, height=450)
+        st.caption(f"**Carandiru (SP):** {contagens['Carandiru (SP)']} documentos | **Penha (RJ):** {contagens['Penha (RJ)']} documentos")
 
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
@@ -402,7 +482,7 @@ with aba_inventario:
             st.warning("Não há registros para exportar com os filtros atuais.")
         else:
             palavras_chave = dicionario_tematico[visualizacao_selecionada]
-            texto_combinado = " ".join(df_consolidado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_consolidado['Título (Busca)'].dropna().astype(str).str.lower())
+            texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str).str.lower()) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str).str.lower())
             contagem_termos = {palavra: texto_combinado.count(palavra.lower()) for palavra in palavras_chave}
             
             df_estatistica = pd.DataFrame(list(contagem_termos.items()), columns=['Termo do eixo', 'Frequência'])
@@ -509,9 +589,9 @@ border-radius: 4px;
 
 <details>
 <summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
-<div class="item-simples">Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</div>
+<div class="item-simples">Subsérie: Fotos da demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</div>
 <details>
-<summary>Subsérie: Demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)</summary>
+<summary>Subsérie: Notícias da demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)</summary>
 <div class="item-simples">Unidade documental: DVD original 2</div>
 </details>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
@@ -578,7 +658,7 @@ border-radius: 4px;
 
 with aba_producao:
     st.markdown(html_arvore, unsafe_allow_html=True)
-    
+
 # ============================================================
 # ABA 3: EQUIPE E OBSERVATÓRIO DATAVERSE
 # ============================================================
