@@ -4,8 +4,9 @@ plotly
 openpyxl
 requests
 beautifulsoup4
-python-docx
 streamlit-antd-components
 nltk
-WordCloud
+wordcloud
 folium
+streamlit-folium
+matplotlib

@@ -424,20 +424,25 @@ with aba_inventario:
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
-        # Coletar texto de campos relevantes
-        textos = df_filtrado['Conteúdo (Busca)'].fillna('') + " " + \
-                df_filtrado['Título (Busca)'].fillna('') + " " + \
-                df_filtrado.get('Palavras-chave', pd.Series([''])).fillna('')
-        texto_completo = " ".join(textos.astype(str))
+        # Coletar texto de campos relevantes de forma segura
+        textos_lista = df_filtrado['Conteúdo (Busca)'].dropna().astype(str).tolist() + \
+                       df_filtrado['Título (Busca)'].dropna().astype(str).tolist()
         
-        # Opcional: remover stopwords em português (adicione uma lista simples ou use nltk)
-        stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas"])
+        # Só tenta pegar as Palavras-chave se a coluna realmente existir na planilha
+        if 'Palavras-chave' in df_filtrado.columns:
+            textos_lista += df_filtrado['Palavras-chave'].dropna().astype(str).tolist()
+            
+        texto_completo = " ".join(textos_lista)
+        
+        # Opcional: remover stopwords em português (incluindo nan e falhas de busca)
+        stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
     
         wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
     
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.imshow(wordcloud, interpolation='bilinear')
         ax.axis('off')
+        fig.patch.set_alpha(0) # Força o fundo da figura a ficar transparente no modo escuro
         st.pyplot(fig)
     
     elif visualizacao_selecionada == "Mapa temático (Carandiru e Penha)":
