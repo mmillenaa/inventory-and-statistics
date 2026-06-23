@@ -211,27 +211,33 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
     return df_consolidado
 
 @st.cache_data(ttl=3600)
-def buscar_producao_autoras(api_token, lista_autoras):
+def buscar_producao_autoras(api_tokens, lista_autoras):
+    """ Modificada para aceitar uma lista de tokens API """
     url_busca = "https://dataverse.fgv.br/api/search"
-    headers = {"X-Dataverse-key": api_token} if api_token else {}
     resultados_unicos = {} 
-    for autora in lista_autoras:
-        params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
-        try:
-            resposta = requests.get(url_busca, headers=headers, params=params)
-            if resposta.status_code == 200:
-                itens = resposta.json().get('data', {}).get('items', [])
-                for item in itens:
-                    identificador = item.get('global_id')
-                    if identificador not in resultados_unicos:
-                         resultados_unicos[identificador] = {
-                            "Título da base": item.get('name', '[sem título]'),
-                            "Autores": "; ".join(item.get('authors', [])),
-                            "Identificador": identificador,
-                            "Link de acesso": item.get('url')
-                        }
-        except Exception:
-            continue
+    
+    if isinstance(api_tokens, str):
+        api_tokens = [api_tokens]
+        
+    for token in api_tokens:
+        headers = {"X-Dataverse-key": token} if token else {}
+        for autora in lista_autoras:
+            params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
+            try:
+                resposta = requests.get(url_busca, headers=headers, params=params)
+                if resposta.status_code == 200:
+                    itens = resposta.json().get('data', {}).get('items', [])
+                    for item in itens:
+                        identificador = item.get('global_id')
+                        if identificador not in resultados_unicos:
+                             resultados_unicos[identificador] = {
+                                "Título da base": item.get('name', '[sem título]'),
+                                "Autores": "; ".join(item.get('authors', [])),
+                                "Identificador": identificador,
+                                "Link de acesso": item.get('url')
+                            }
+            except Exception:
+                continue
     return pd.DataFrame(list(resultados_unicos.values()))
 
 @st.cache_data(ttl=86400)
@@ -482,153 +488,152 @@ import streamlit_antd_components as sac
 # ============================================================
 html_arvore = """
 <style>
-.arvore-acervo {
-font-family: 'Source Serif 4', serif;
-font-size: 1rem;
-line-height: 1.5;
-color: var(--text-color);
-}
-.arvore-acervo details {
-margin-left: 24px;
-margin-bottom: 2px;
-}
-.arvore-acervo summary {
-cursor: pointer;
-margin-bottom: 4px;
-outline: none;
-}
-.arvore-acervo summary:hover {
-color: #4ba3a6;
-}
-.item-simples {
-margin-left: 40px;
-margin-bottom: 4px;
-}
-.tag-azul {
-background-color: #2f6f8f;
-color: white;
-border-radius: 6px;
-padding: 4px 10px;
-font-size: 0.85rem;
-display: inline-block;
-margin-top: 2px;
-margin-bottom: 8px;
-font-family: 'IBM Plex Mono', monospace;
-}
-.sigla-codigo {
-font-family: 'IBM Plex Mono', monospace;
-color: #2F6F8F;
-font-weight: 600;
-font-size: 0.9em;
-background: rgba(47, 111, 143, 0.08);
-padding: 2px 5px;
-border-radius: 4px;
-}
+.arvore-acervo { font-family: 'Source Serif 4', serif; font-size: 1rem; line-height: 1.5; color: var(--text-color); }
+.arvore-acervo details { margin-left: 24px; margin-bottom: 2px; }
+.arvore-acervo summary { cursor: pointer; margin-bottom: 4px; outline: none; }
+.arvore-acervo summary:hover { color: #4ba3a6; }
+.item-simples { margin-left: 40px; margin-bottom: 4px; }
+.tag-azul { background-color: #2f6f8f; color: white; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; display: inline-block; margin-top: 2px; margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; }
+.sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
+
+/* Estilos das Badges */
+.status-badge { font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; display: inline-block; font-weight: 500; margin-top: 4px; margin-bottom: 6px; line-height: 1.2; font-family: 'Source Serif 4', sans-serif; }
+.bg-verde { background-color: rgba(25, 135, 84, 0.1); color: #198754; border: 1px solid rgba(25, 135, 84, 0.2); }
+.bg-vermelho { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2); }
+.bg-azul { background-color: rgba(13, 110, 253, 0.1); color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.2); }
+.bg-amarelo { background-color: rgba(255, 193, 7, 0.1); color: #b38600; border: 1px solid rgba(255, 193, 7, 0.3); }
 </style>
 
 <div class="arvore-acervo">
 
 <details>
-<summary><strong>Coleção: Grupo de Pesquisa em Direito e Violência de Estado <span class="sigla-codigo">(GPDVE)</span></strong></summary>
+<summary><strong>Coleção: Carandiru</strong></summary>
+
+    <details>
+    <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
+        <details>
+        <summary>Subsérie: Criar, construir, inaugurar</summary>
+        <div class="item-simples">Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</div>
+        <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+        
+        <details>
+        <summary>Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
+        <div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+    </details>
+
+    <details>
+    <summary><strong>Série: Processo criminal - Massacre do Carandiru</strong></summary>
+        <details>
+        <summary>Subsérie: Laudos de lesão corporal</summary>
+        <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+        </details>
+    </details>
+
+    <details>
+    <summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
+        <details>
+        <summary>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção e clippings de repercussão midiática</summary>
+        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+    </details>
+
+    <details>
+    <summary><strong>Série: Mapeamento de rememorações <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
+        <details>
+        <summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
+        <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
+        <div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+    </details>
+
+    <details>
+    <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
+        <details>
+        <summary>Subsérie: Penitenciária do Estado em 1928</summary>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+        <details>
+        <summary>Subsérie: Extras do filme Carandiru, por Hector Babenco (2002)</summary>
+        <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+    </details>
+
+</details>
 
 <details>
-<summary><strong>Série: Notícias <span class="sigla-codigo">(NOTICIAS)</span></strong></summary>
-<details>
-<summary>Subsérie: Massacre do Carandiru</summary>
-<div class="item-simples">Unidade documental: DVD original</div>
-</details>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
+<summary><strong>Coleção: Direito e Violência de Estado</strong></summary>
 
-<details>
-<summary><strong>Série: Filmes <span class="sigla-codigo">(FILMES)</span></strong></summary>
-<div class="item-simples">Subsérie: Penitenciária do Estado em 1928</div>
-<div class="item-simples">Subsérie: Direção de arte do filme Carandiru</div>
-<div class="item-simples">Subsérie: Slideshow e charge "Recado da produção"</div>
-<div class="item-simples">Subsérie: Bastidores do filme Carandiru</div>
-<div class="item-simples">Subsérie: Filmes de Hector Babenco</div>
-<div class="item-simples">Unidade documental: DVD original de documentários sobre o filme "Carandiru" e "Penitenciária do Estado 1928"</div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Mapeamento de rememorações</strong></summary>
+        <details>
+        <summary>Subsérie: Rememorações e notícias do massacre da Penha no Rio de Janeiro (2025)</summary>
+        <div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
+        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+        </details>
+    </details>
 
-<details>
-<summary><strong>Série: Mapeamentos <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
-<details>
-<summary>Subsérie: Rememorações do massacre do Carandiru</summary>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
-<details>
-<summary>Subsérie: Notícias massacre da Penha</summary>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
-</details>
+    <details>
+    <summary><strong>Série: Os anteprojetos da Lei de Execução Penal</strong></summary>
+        <details>
+        <summary>Subsérie: Repositórios de ideias para punir: uma navegação textual pelos anteprojetos da Lei de Execução Penal (1935-1975)</summary>
+        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+        </details>
+    </details>
 
-<details>
-<summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
-<div class="item-simples">Subsérie: Fotos da demolição dos pavilhões 2 e 5 da Casa de Detenção do Carandiru</div>
-<details>
-<summary>Subsérie: Notícias da demolição da Casa de Detenção do Carandiru (Penitenciária do Estado)</summary>
-<div class="item-simples">Unidade documental: DVD original 2</div>
-</details>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
-
-</details>
-
-<details>
-<summary><strong>Coleção: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
-
-<details>
-<summary><strong>Série: Companhia Paulista de Obras e Serviços <span class="sigla-codigo">(CPOS)</span></strong></summary>
-<div class="item-simples">Subsérie: Planta do complexo do Carandiru</div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
-
-<details>
-<summary><strong>Série: Diários Associados do Estado de São Paulo <span class="sigla-codigo">(DASP)</span></strong></summary>
-<div class="item-simples">Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru</div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
+        <details>
+        <summary>Subsérie: A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
+        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+        </details>
+    </details>
 
 </details>
 
 <details>
 <summary><strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong></summary>
 
-<details>
-<summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
-<div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
-<div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
-<div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
+    <div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
+    <div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
+    <div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
+    </details>
 
-<details>
-<summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
-<div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
+    <div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
+    </details>
 
-<details>
-<summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
-<div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
+    <div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
+    </details>
 
-<details>
-<summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
-<div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
+    <div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
+    </details>
 
-<details>
-<summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
-<div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
+    <div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
+    </details>
 
-<details>
-<summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
-<div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
-</details>
+    <details>
+    <summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
+    <div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
+    </details>
 
 </details>
-
 </div>
 """
 
@@ -661,7 +666,10 @@ with aba_equipe:
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
     
-    meu_token_api = st.secrets["api_dataverse"]
+    # === AQUI: Utilizando as duas chaves de API ===
+    chave_original_fgv = st.secrets.get("api_dataverse", "")
+    chave_nova = "b657b676-4ef6-4675-9de8-bbf41edc3be2"
+    chaves_api = [chave_original_fgv, chave_nova]
     
     pesquisadoras_rastreadas = [
         "Machado, Maíra Rocha", 
@@ -684,7 +692,7 @@ with aba_equipe:
     ]
     
     with st.spinner("Consultando o repositório..."):
-        df_producao = buscar_producao_autoras(meu_token_api, pesquisadoras_rastreadas)
+        df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas)
     
     if not df_producao.empty:
         st.data_editor(
