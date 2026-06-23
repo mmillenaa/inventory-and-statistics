@@ -1,6 +1,10 @@
 # Inventory and Statistics of GPDVE Collections
 
-A local Streamlit application for consolidating, exploring, and analysing archival metadata from structured spreadsheet collections.
+A local Streamlit application for consolidating, exploring, and analysing structured archival metadata, enabling transversal statistical generation across collections. Designed for cataloguing and archival description, it supports the management of photographic archives and primary written sources in compliance with national and international archival standards, including CONARQ, NOBRADE, and ISAD(G).
+<img src="https://github.com/user-attachments/assets/73c92635-287d-4530-afeb-9015b83f2d13" width="933" height="448" />
+<img src="https://github.com/user-attachments/assets/deda2963-0170-4e98-bd36-b51bdb71b0be" width="937" height="225" />
+<img src="https://github.com/user-attachments/assets/69e3fed4-204c-449a-9f24-38757b2140d0" width="930" height="574" />
+
 
 ## Project Status
 
