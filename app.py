@@ -506,132 +506,135 @@ html_arvore = """
 
 <div class="arvore-acervo">
 
+<!-- COLEÇÃO 1: CARANDIRU -->
 <details>
 <summary><strong>Coleção: Carandiru</strong></summary>
 
-    <details>
-    <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
-        <details>
-        <summary>Subsérie: Criar, construir, inaugurar</summary>
-        <div class="item-simples">Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</div>
-        <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-        
-        <details>
-        <summary>Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
-        <div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-    </details>
+<details>
+<summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
+<details>
+<summary>Subsérie: Criar, construir, inaugurar</summary>
+<div class="item-simples">Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</div>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Processo criminal - Massacre do Carandiru</strong></summary>
-        <details>
-        <summary>Subsérie: Laudos de lesão corporal</summary>
-        <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
-        </details>
-    </details>
+<details>
+<summary>Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
+<div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+</details>
 
-    <details>
-    <summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
-        <details>
-        <summary>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção e clippings de repercussão midiática</summary>
-        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-    </details>
+<details>
+<summary><strong>Série: Processo criminal - Massacre do Carandiru</strong></summary>
+<details>
+<summary>Subsérie: Laudos de lesão corporal</summary>
+<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+</details>
+</details>
 
-    <details>
-    <summary><strong>Série: Mapeamento de rememorações <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
-        <details>
-        <summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
-        <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
-        <div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-    </details>
+<details>
+<summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
+<details>
+<summary>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção e clippings de repercussão midiática</summary>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+</details>
 
-    <details>
-    <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
-        <details>
-        <summary>Subsérie: Penitenciária do Estado em 1928</summary>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-        <details>
-        <summary>Subsérie: Extras do filme Carandiru, por Hector Babenco (2002)</summary>
-        <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-    </details>
+<details>
+<summary><strong>Série: Mapeamento de rememorações <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
+<details>
+<summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
+<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+</details>
+
+<details>
+<summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
+<details>
+<summary>Subsérie: Penitenciária do Estado em 1928</summary>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+<details>
+<summary>Subsérie: Extras do filme Carandiru, por Hector Babenco (2002)</summary>
+<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+</details>
 
 </details>
 
+<!-- COLEÇÃO 2: DIREITO E VIOLÊNCIA DE ESTADO -->
 <details>
 <summary><strong>Coleção: Direito e Violência de Estado</strong></summary>
 
-    <details>
-    <summary><strong>Série: Mapeamento de rememorações</strong></summary>
-        <details>
-        <summary>Subsérie: Rememorações e notícias do massacre da Penha no Rio de Janeiro (2025)</summary>
-        <div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
-        <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
-        </details>
-    </details>
-
-    <details>
-    <summary><strong>Série: Os anteprojetos da Lei de Execução Penal</strong></summary>
-        <details>
-        <summary>Subsérie: Repositórios de ideias para punir: uma navegação textual pelos anteprojetos da Lei de Execução Penal (1935-1975)</summary>
-        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-        </details>
-    </details>
-
-    <details>
-    <summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
-        <details>
-        <summary>Subsérie: A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
-        <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-        </details>
-    </details>
-
+<details>
+<summary><strong>Série: Mapeamento de rememorações</strong></summary>
+<details>
+<summary>Subsérie: Rememorações e notícias do massacre da Penha no Rio de Janeiro (2025)</summary>
+<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
 </details>
 
 <details>
+<summary><strong>Série: Os anteprojetos da Lei de Execução Penal</strong></summary>
+<details>
+<summary>Subsérie: Repositórios de ideias para punir: uma navegação textual pelos anteprojetos da Lei de Execução Penal (1935-1975)</summary>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+</details>
+</details>
+
+<details>
+<summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
+<details>
+<summary>Subsérie: A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
+</details>
+</details>
+
+</details>
+
+<!-- COLEÇÃO 3: PROCJURADM -->
+<details>
 <summary><strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong></summary>
 
-    <details>
-    <summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
-    <div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
-    <div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
-    <div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
+<div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
+<div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
-    <div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
+<div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
-    <div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
-    <div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
-    <div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
+<div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
+</details>
 
-    <details>
-    <summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
-    <div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
-    </details>
+<details>
+<summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
+<div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
+</details>
 
 </details>
 </div>
