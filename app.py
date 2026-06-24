@@ -520,7 +520,7 @@ html_arvore = """
 </details>
 
 <details>
-<summary>Subsérie: Penitenciárias e presídios - Casa de Detenção do Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
+<summary>Subsérie: Penitenciárias e presídios - Casa de Detenção de São Paulo no Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
 <div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
