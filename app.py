@@ -26,7 +26,7 @@ def normalizar_texto(texto, stemmer):
     palavras_stem = [stemmer.stem(p) for p in palavras]
     return ' '.join(palavras_stem)
 
-st.set_page_config(layout="wide", page_title="Inventário e estatísticas do GPDVE")
+st.set_page_config(layout="wide", page_title="Inventário e estatísticas de coleções")
 
 # ============================================================
 # SISTEMA DE SEGURANÇA (PORTA TRANCADA)
@@ -69,7 +69,7 @@ def traduzir(texto_pt):
         "Relatório (REL)": {"English": "Report (REL)", "Español": "Relatorio (REL)"},
         "Nato-digital (NDG)": {"English": "Born-digital (NDG)", "Español": "Nato-digital (NDG)"},
         "Não determinado (NDT)": {"English": "Undetermined (NDT)", "Español": "No determinado (NDT)"},
-        "Inventário e estatística das coleções do GPDVE": {"English": "Inventory and statistics of GPDVE collections", "Español": "Inventario y estadística de las colecciones del GPDVE"},
+        "Inventário e estatística de coleções em Direito e Violência de Estado": {"English": "Inventory and statistics of collections about state violence", "Español": "Inventario y estadística de las colecciones en derecho y violencia de estado"},
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
@@ -276,7 +276,7 @@ def extrair_equipe_fgv():
 # ============================================================
 # CABEÇALHO DO PROGRAMA
 # ============================================================
-st.title(traduzir("Inventário e estatística das coleções do GPDVE"))
+st.title(traduzir("Inventário e estatística de coleções em Direito e Violência de Estado"))
 st.markdown(traduzir("Gestão e visualização transversal de metadados arquivísticos."))
 st.caption(traduzir("O programa foi concebido para realizar análises estatísticas sobre bases de dados estruturadas e padronizadas, especificamente voltadas à catalogação e descrição arquivística de documentos, permitindo visualizações transversais de metadados e instrumentos de pesquisa."))
 
@@ -732,7 +732,7 @@ rodape_html = f"""
 </div>
 <hr style="border-top: 1px solid rgba(120,120,120,0.25); margin: 20px 0;">
 <div style="background: rgba(80, 120, 160, 0.06); padding: 15px; border-radius: 12px; border: 1px solid rgba(120,120,120,0.18);">
-    <p style="margin: 0; font-family: 'Source Serif 4', serif; font-size: 0.95rem; color: var(--text-color);">FRANCO, Millena Miranda. Inventário e estatísticas das coleções do GPDVE: gestão e visualização transversal de metadados arquivísticos. São Paulo: Escola de Direito de São Paulo, Fundação Getulio Vargas (FGV), 2026. Programa de computador. Acesso em: {data_formatada}.</p>
+    <p style="margin: 0; font-family: 'Source Serif 4', serif; font-size: 0.95rem; color: var(--text-color);">FRANCO, Millena Miranda. Inventário e estatísticas de coleções em Direito e Violência de Estado: gestão e visualização transversal de metadados arquivísticos. São Paulo: Escola de Direito de São Paulo, Fundação Getulio Vargas (FGV), 2026. Programa de computador. Acesso em: {data_formatada}.</p>
 </div>
 """
 st.markdown(rodape_html, unsafe_allow_html=True)
