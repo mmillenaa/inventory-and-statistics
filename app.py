@@ -69,7 +69,7 @@ def traduzir(texto_pt):
         "Relatório (REL)": {"English": "Report (REL)", "Español": "Relatorio (REL)"},
         "Nato-digital (NDG)": {"English": "Born-digital (NDG)", "Español": "Nato-digital (NDG)"},
         "Não determinado (NDT)": {"English": "Undetermined (NDT)", "Español": "No determinado (NDT)"},
-        "Inventário e estatística de coleções em Direito e Violência de Estado": {"English": "Inventory and statistics of collections about state violence", "Español": "Inventario y estadística de las colecciones en derecho y violencia de estado"},
+        "Inventário e estatística de coleções em Direito e Violência de Estado": {"English": "Inventory and statistics of collections about Law and state violence", "Español": "Inventario y estadística de las colecciones en derecho y violencia de estado"},
         "Gestão e visualização transversal de metadados arquivísticos.": {"English": "Management and transversal visualisation of archival metadata.", "Español": "Gestión y visualización transversal de metadatos archivísticos."},
         "Inventário do acervo catalogado": {"English": "Catalogued collection inventory", "Español": "Inventario del acervo catalogado"},
         "Visão geral do acervo": {"English": "Collection overview", "Español": "Visión general del acervo"},
