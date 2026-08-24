@@ -168,7 +168,12 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         if not col_ref: col_ref = df_mestra.columns[0]
             
         df_mestra[col_ref] = df_mestra[col_ref].astype(str).str.strip()
-        abas_detalhe = [aba for aba in xls.sheet_names if aba.lower() not in ['geral', 'classificação']]
+
+        abas_detalhe = []
+        for aba in xls.sheet_names:
+            aba_sem_acento = unicodedata.normalize('NFKD', aba).encode('ASCII', 'ignore').decode('utf-8').lower()
+            if aba_sem_acento not in ['geral', 'classificacao']:
+                abas_detalhe.append(aba)
         
         for aba in abas_detalhe:
             aba_norm = re.sub(r'[\s\-_]', '', aba).lower()
@@ -434,17 +439,24 @@ with aba_inventario:
         if 'Palavras-chave' in df_filtrado.columns:
             textos_lista += df_filtrado['Palavras-chave'].dropna().astype(str).tolist()
             
-        texto_completo = " ".join(textos_lista)
+        texto_completo = " ".join(textos_lista).strip()
         
-        stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
-    
-        wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
-    
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.imshow(wordcloud, interpolation='bilinear')
-        ax.axis('off')
-        fig.patch.set_alpha(0) 
-        st.pyplot(fig)
+        # Stopwords omitidas aqui por brevidade, mantenha a sua lista completa!
+        stopwords = set(["de", "a", "o", "que", "nan", "título", "localizado"])
+        
+        # Verifica se sobrou alguma palavra válida após os filtros e stopwords
+        palavras_restantes = [p for p in texto_completo.lower().split() if p not in stopwords]
+        
+        if not palavras_restantes:
+            st.warning("Não há vocabulário suficiente nos itens filtrados para gerar a nuvem de palavras. Tente limpar os filtros.")
+        else:
+            wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
+        
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.imshow(wordcloud, interpolation='bilinear')
+            ax.axis('off')
+            fig.patch.set_alpha(0) 
+            st.pyplot(fig)
         
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
