@@ -415,12 +415,12 @@ with aba_inventario:
         df_datas['Ano_Extraido'] = df_datas['Data (Busca)'].astype(str).str.extract(r'((?:18|19|20)\d{2})')
         df_anos = df_datas.dropna(subset=['Ano_Extraido'])
         if not df_anos.empty:
-             contagem_anos = df_anos['Ano_Extraido'].value_counts().reset_index()
-             contagem_anos.columns = ['Ano', 'Frequência']
-             fig_linha = px.line(contagem_anos.sort_values(by='Ano'), x='Ano', y='Frequência', markers=True, color_discrete_sequence=['#4ba3a6'])
-             fig_linha.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)'))
-             fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
-             st.plotly_chart(fig_linha, use_container_width=True)
+            contagem_anos = df_anos['Ano_Extraido'].value_counts().reset_index()
+            contagem_anos.columns = ['Ano', 'Frequência']
+            fig_linha = px.line(contagem_anos.sort_values(by='Ano'), x='Ano', y='Frequência', markers=True, color_discrete_sequence=['#4ba3a6'])
+            fig_linha.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family='Cormorant Garamond, serif', size=24)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title=traduzir("Volume documental"), gridcolor='rgba(120,120,120,0.15)'))
+            fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
+            st.plotly_chart(fig_linha, use_container_width=True)
 
     elif visualizacao_selecionada in dicionario_tematico:
         palavras_chave = dicionario_tematico[visualizacao_selecionada]
@@ -440,7 +440,7 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-   elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
+    elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
@@ -453,7 +453,7 @@ with aba_inventario:
         texto_completo = " ".join(textos_lista).strip()
         
         stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
-    
+        
         try:
             wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
         
@@ -465,7 +465,7 @@ with aba_inventario:
             
         except ValueError:
             st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
-        
+            
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
 
