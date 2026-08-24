@@ -440,7 +440,7 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
+   elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
@@ -453,13 +453,8 @@ with aba_inventario:
         texto_completo = " ".join(textos_lista).strip()
         
         stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
-        
-        # Trava para evitar o erro do "At least 1 word to plot a word cloud"
-        palavras_restantes = [p for p in texto_completo.lower().split() if p not in stopwords]
-        
-        if not palavras_restantes:
-            st.warning("Não há vocabulário suficiente nos itens filtrados para gerar a nuvem de palavras. Tente limpar os filtros.")
-        else:
+    
+        try:
             wordcloud = WordCloud(width=800, height=400, background_color='rgba(0,0,0,0)', mode='RGBA', colormap='viridis', stopwords=stopwords, max_words=100).generate(texto_completo)
         
             fig, ax = plt.subplots(figsize=(10, 5))
@@ -467,6 +462,9 @@ with aba_inventario:
             ax.axis('off')
             fig.patch.set_alpha(0) 
             st.pyplot(fig)
+            
+        except ValueError:
+            st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
         
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
