@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import nltk
 from nltk.stem import RSLPStemmer
 import unicodedata
+import streamlit_antd_components as sac
 
 # Baixar recurso uma vez (cache)
 @st.cache_resource
@@ -150,6 +151,11 @@ st.markdown(css_base, unsafe_allow_html=True)
 # ============================================================
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
+    
+    # Função interna para limpar acentos dos nomes das colunas e abas
+    def norm_col(texto):
+        return unicodedata.normalize('NFKD', str(texto)).encode('ASCII', 'ignore').decode('utf-8').lower()
+        
     df_consolidado = pd.DataFrame()
     for nome in lista_arquivos:
         caminho = os.path.join(pasta, nome)
@@ -164,14 +170,19 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         df_mestra['Notação (Busca)'] = ""
         df_mestra['Notas (Busca)'] = ""
         
-        col_ref = next((c for c in df_mestra.columns if 'código' in c.lower() or 'notação' in c.lower() or 'unidade' in c.lower()), None)
+        # Encontra a coluna de referência ignorando acentos
+        col_ref = next((c for c in df_mestra.columns if 'codigo' in norm_col(c) or 'notacao' in norm_col(c) or 'unidade' in norm_col(c)), None)
         if not col_ref: col_ref = df_mestra.columns[0]
             
+        # Trava de Segurança para erros do Excel (#NOME?, =, - soltos)
         df_mestra[col_ref] = df_mestra[col_ref].astype(str).str.strip()
+        df_mestra[col_ref] = df_mestra[col_ref].str.replace(r'^[\=\-\+\@]\s*', '', regex=True)
+        df_mestra[col_ref] = df_mestra[col_ref].replace('#NOME?', '')
 
+        # Pula as abas gerais ignorando acentos/maiusculas
         abas_detalhe = []
         for aba in xls.sheet_names:
-            aba_sem_acento = unicodedata.normalize('NFKD', aba).encode('ASCII', 'ignore').decode('utf-8').lower()
+            aba_sem_acento = norm_col(aba)
             if aba_sem_acento not in ['geral', 'classificacao']:
                 abas_detalhe.append(aba)
         
@@ -186,11 +197,15 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
           
             df_det = pd.read_excel(xls, sheet_name=aba)
             df_det = df_det.dropna(how='all')
-            col_t = next((c for c in df_det.columns if 'título' in c.lower() or 'titulo' in c.lower()), None)
-            col_c = next((c for c in df_det.columns if 'conteúdo' in c.lower() or 'assunto' in c.lower()), None)
-            col_d = next((c for c in df_det.columns if 'data' in c.lower()), None)
-            col_n = next((c for c in df_det.columns if 'referência' in c.lower() or 'notação' in c.lower() or 'código' in c.lower()), None)
-            col_notas = next((c for c in df_det.columns if 'nota' in c.lower()), None)
+            
+            # Buscando as colunas sem se preocupar com os acentos
+            col_t = next((c for c in df_det.columns if 'titulo' in norm_col(c)), None)
+            col_c = next((c for c in df_det.columns if 'conteudo' in norm_col(c) or 'assunto' in norm_col(c)), None)
+            col_d = next((c for c in df_det.columns if 'data' in norm_col(c)), None)
+            col_n = next((c for c in df_det.columns if 'referencia' in norm_col(c) or 'notacao' in norm_col(c) or 'codigo' in norm_col(c) or 'cod' in norm_col(c)), None)
+            
+            # Aqui vai pegar colunas como "Notas" ou "Condições de acesso e reprodução"
+            col_notas = next((c for c in df_det.columns if 'nota' in norm_col(c) or 'condicoes' in norm_col(c) or 'observacao' in norm_col(c)), None)
             
             for i, idx_mestra in enumerate(indices_mestra):
                 if i < len(df_det):
@@ -217,7 +232,6 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
 @st.cache_data(ttl=3600)
 def buscar_producao_autoras(api_tokens, lista_autoras):
-    """ Modificada para aceitar uma lista de tokens API """
     url_busca = "https://dataverse.fgv.br/api/search"
     resultados_unicos = {} 
     
@@ -323,14 +337,12 @@ with aba_inventario:
 
     if termo:
         stemmer = get_stemmer()
-        # Normaliza e stemiza cada palavra do termo separadamente
-        termo_normal = normalizar_texto(termo, stemmer)  # já remove acentos, minúsculas
+        termo_normal = normalizar_texto(termo, stemmer)  
         termo_stem = ' '.join([stemmer.stem(p) for p in termo_normal.split()])
         
         df_filtrado['NORMAL_BUSCA'] = df_filtrado.apply(
             lambda row: normalizar_texto(' '.join(row.dropna().astype(str)), stemmer), axis=1
         )
-        # Cria padrão regex para cada palavra stemizada
         padrao = r'\b' + r'\b|\b'.join(termo_stem.split()) + r'\b'
         mask = df_filtrado['NORMAL_BUSCA'].str.contains(padrao, regex=True, na=False)
         df_filtrado = df_filtrado[mask].drop(columns=['NORMAL_BUSCA'])
@@ -394,7 +406,6 @@ with aba_inventario:
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
     
-    # Menu atualizado: removido o "Mapa temático"
     opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (título e conteúdo)"]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
@@ -441,10 +452,9 @@ with aba_inventario:
             
         texto_completo = " ".join(textos_lista).strip()
         
-        # Stopwords omitidas aqui por brevidade, mantenha a sua lista completa!
-        stopwords = set(["de", "a", "o", "que", "nan", "título", "localizado"])
+        stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
         
-        # Verifica se sobrou alguma palavra válida após os filtros e stopwords
+        # Trava para evitar o erro do "At least 1 word to plot a word cloud"
         palavras_restantes = [p for p in texto_completo.lower().split() if p not in stopwords]
         
         if not palavras_restantes:
@@ -470,7 +480,6 @@ with aba_inventario:
             palavras_chave = dicionario_tematico[visualizacao_selecionada]
             texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
             
-            # Igualando a contagem do exportar com a da tela
             stemmer = get_stemmer()
             texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
             
@@ -494,7 +503,7 @@ with aba_inventario:
             )
             st.plotly_chart(fig_tema, use_container_width=True)
 
-import streamlit_antd_components as sac
+
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO
 # ============================================================
@@ -605,7 +614,7 @@ html_arvore = """
 <details>
 <summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
 <details>
-<summary>Subsérie: A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
+<summary>Subsérie: A construcción jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
 </details>
 </details>
