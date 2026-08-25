@@ -232,40 +232,60 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
 @st.cache_data(ttl=3600)
 def buscar_producao_autoras(api_tokens, lista_autoras):
-    # Agora a lista inclui os dois repositórios
-    urls_busca = [
-        "https://dataverse.fgv.br/api/search",
-        "https://data.scielo.org/api/search"
-    ]
-    
     resultados_unicos = {} 
     
     if isinstance(api_tokens, str):
         api_tokens = [api_tokens]
         
-    for token in api_tokens:
-        headers = {"X-Dataverse-key": token} if token else {}
-        
-        for url_busca in urls_busca: 
-            for autora in lista_autoras:
-                # AQUI ESTÁ A CORREÇÃO: a variável 'autora' agora vai sem aspas duplas estritas
-                params = {"q": autora, "type": "dataset", "per_page": 100}
-                try:
-                    resposta = requests.get(url_busca, headers=headers, params=params)
-                    if resposta.status_code == 200:
-                        itens = resposta.json().get('data', {}).get('items', [])
-                        for item in itens:
-                            identificador = item.get('global_id')
-                            if identificador not in resultados_unicos:
-                                 resultados_unicos[identificador] = {
-                                    "Título da base": item.get('name', '[sem título]'),
-                                    "Autores": "; ".join(item.get('authors', [])),
-                                    "Identificador": identificador,
-                                    "Link de acesso": item.get('url')
-                                }
-                except Exception:
-                    continue
-                    
+    for autora in lista_autoras:
+    
+        for token in api_tokens:
+            headers = {"X-Dataverse-key": token} if token else {}
+            url_fgv = "https://dataverse.fgv.br/api/search"
+            # Usando aspas para buscar exatamente a autora e evitar falsos positivos
+            params_fgv = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
+            try:
+                res_fgv = requests.get(url_fgv, headers=headers, params=params_fgv)
+                if res_fgv.status_code == 200:
+                    itens = res_fgv.json().get('data', {}).get('items', [])
+                    for item in itens:
+                        identificador = item.get('global_id')
+                        if identificador not in resultados_unicos:
+                            resultados_unicos[identificador] = {
+                                "Título da base": item.get('name', '[sem título]'),
+                                "Autores": "; ".join(item.get('authors', [])),
+                                "Identificador": identificador,
+                                "Link de acesso": item.get('url')
+                            }
+            except Exception:
+                pass
+
+     
+        url_scielo = "https://data.scielo.org/api/search"
+      
+        params_scielo = {
+            "q": f'"{autora}"', 
+            "type": "dataset", 
+            "subtree": "brrdgv", 
+            "per_page": 100
+        }
+        try:
+
+            res_scielo = requests.get(url_scielo, params=params_scielo)
+            if res_scielo.status_code == 200:
+                itens = res_scielo.json().get('data', {}).get('items', [])
+                for item in itens:
+                    identificador = item.get('global_id')
+                    if identificador not in resultados_unicos:
+                        resultados_unicos[identificador] = {
+                            "Título da base": item.get('name', '[sem título]'),
+                            "Autores": "; ".join(item.get('authors', [])),
+                            "Identificador": identificador,
+                            "Link de acesso": item.get('url')
+                        }
+        except Exception:
+            pass
+                
     return pd.DataFrame(list(resultados_unicos.values()))
 
 @st.cache_data(ttl=86400)
