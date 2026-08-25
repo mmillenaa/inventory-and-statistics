@@ -238,11 +238,10 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
         api_tokens = [api_tokens]
         
     for autora in lista_autoras:
-    
+
         for token in api_tokens:
             headers = {"X-Dataverse-key": token} if token else {}
             url_fgv = "https://dataverse.fgv.br/api/search"
-            # Usando aspas para buscar exatamente a autora e evitar falsos positivos
             params_fgv = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
             try:
                 res_fgv = requests.get(url_fgv, headers=headers, params=params_fgv)
@@ -260,17 +259,21 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
             except Exception:
                 pass
 
-     
+        partes_nome = autora.split(", ")
+        if len(partes_nome) == 2:
+            nome_busca_scielo = f"{partes_nome[1]} {partes_nome[0]}"
+        else:
+            nome_busca_scielo = autora
+
         url_scielo = "https://data.scielo.org/api/search"
-      
+
         params_scielo = {
-            "q": f'"{autora}"', 
+            "q": nome_busca_scielo, 
             "type": "dataset", 
             "subtree": "brrdgv", 
             "per_page": 100
         }
         try:
-
             res_scielo = requests.get(url_scielo, params=params_scielo)
             if res_scielo.status_code == 200:
                 itens = res_scielo.json().get('data', {}).get('items', [])
@@ -287,7 +290,7 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
             pass
                 
     return pd.DataFrame(list(resultados_unicos.values()))
-
+    
 @st.cache_data(ttl=86400)
 def extrair_equipe_fgv():
     url = "https://direitosp.fgv.br/grupos-de-pesquisa/grupo-pesquisa-direito-violencia-estado"
