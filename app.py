@@ -524,39 +524,7 @@ with aba_inventario:
             
     st.subheader(traduzir("Visualização detalhada"))
     df_exibicao = df_filtrado.copy().reset_index(drop=True)
-
-    if st.button(traduzir("Gerar inventário do acervo")):
-        if df_filtrado.empty:
-            st.warning("Não há registros para exportar com os filtros atuais.")
-        elif visualizacao_selecionada not in dicionario_tematico:
-            st.warning("Para gerar o gráfico estatístico do inventário, primeiro selecione um eixo temático específico (Família, Arquitetura, etc.) no menu de visualizações acima.")
-        else:
-            palavras_chave = dicionario_tematico[visualizacao_selecionada]
-            texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
-            
-            stemmer = get_stemmer()
-            texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
-            
-            contagem_termos = {}
-            for palavra in palavras_chave:
-                palavra_stem = normalizar_texto(palavra, stemmer)
-                contagem_termos[palavra] = len(re.findall(rf'\b{palavra_stem}\b', texto_combinado_normal))
-            
-            df_estatistica = pd.DataFrame(list(contagem_termos.items()), columns=['Termo do eixo', 'Frequência'])
-            fig_tema = px.bar(
-                df_estatistica, x='Termo do eixo', y='Frequência', text='Frequência',
-                color='Frequência', color_continuous_scale=['#16324F', '#235789', '#2F6F8F', '#4BA3A6', '#7BC6CC']
-            )
-            fig_tema.update_traces(textposition='outside', marker_line_width=0)
-            fig_tema.update_layout(
-                template='plotly_dark', 
-                font=dict(family='Source Serif 4, serif', size=15),
-                title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)),
-                coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)')
-            )
-            st.plotly_chart(fig_tema, use_container_width=True)
-
+    # Botão removido conforme solicitado
 
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO
@@ -770,6 +738,23 @@ with aba_equipe:
     
     with st.spinner("Consultando o repositório..."):
         df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas)
+    
+    # --- INSERÇÃO MANUAL DA PUBLICAÇÃO DE VIVIANE BALBUGLIO ---
+    registro_manual = pd.DataFrame([{
+        "Título da base": "A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017",
+        "Autores": "Balbuglio, Viviane",
+        "Identificador": "doi:10.48331/SCIELODATA.HQACHL",
+        "Link de acesso": "https://data.scielo.org/dataset.xhtml?persistentId=doi:10.48331/SCIELODATA.HQACHL"
+    }])
+    
+    # Concatena com o DataFrame existente (se houver) ou usa apenas o manual
+    if df_producao.empty:
+        df_producao = registro_manual
+    else:
+        # Verifica se o registro já não existe para evitar duplicidade
+        if not df_producao['Identificador'].str.contains('10.48331/SCIELODATA.HQACHL', na=False).any():
+            df_producao = pd.concat([df_producao, registro_manual], ignore_index=True)
+    # ----------------------------------------------------------
     
     if not df_producao.empty:
         st.data_editor(
