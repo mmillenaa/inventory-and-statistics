@@ -93,7 +93,6 @@ def traduzir(texto_pt):
         "Frequência de datas grafadas nos documentos": {"English": "Frequency of dates written in documents", "Español": "Frecuencia de fechas escritas en los documentos"},
         "Volume documental": {"English": "Documentary volume", "Español": "Volumen documental"},
         "Distribuição estatística": {"English": "Statistical distribution", "Español": "Distribución estadística"},
-        "Visualização detalhada": {"English": "Detailed view", "Español": "Vista detallada"},
         "Instrumentos de pesquisa": {"English": "Research instruments", "Español": "Instrumentos de investigación"},
         "Gerar inventário do acervo": {"English": "Generate collection inventory", "Español": "Generar inventario del acervo"},
         "Acervo documental digitalizado": {"English": "Digitised documentary collection", "Español": "Colección documental digitalizada"},
@@ -521,10 +520,6 @@ with aba_inventario:
             
         except ValueError:
             st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
-            
-    st.subheader(traduzir("Visualização detalhada"))
-    df_exibicao = df_filtrado.copy().reset_index(drop=True)
-    # Botão removido conforme solicitado
 
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO
