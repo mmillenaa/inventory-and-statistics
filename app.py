@@ -687,10 +687,9 @@ with aba_equipe:
     
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse da FGV"))
     st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
-    
-    # === AQUI: Utilizando as duas chaves de API ===
+  
     chave_original_fgv = st.secrets.get("api_dataverse", "")
-    chave_nova = "b657b676-4ef6-4675-9de8-bbf41edc3be2"
+    chave_nova = st.secrets.get("api_dataverse_nova", "")
     chaves_api = [chave_original_fgv, chave_nova]
     
     pesquisadoras_rastreadas = [
