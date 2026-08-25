@@ -232,7 +232,12 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
 @st.cache_data(ttl=3600)
 def buscar_producao_autoras(api_tokens, lista_autoras):
-    url_busca = "https://dataverse.fgv.br/api/search"
+    # Agora a lista inclui os dois repositórios
+    urls_busca = [
+        "https://dataverse.fgv.br/api/search",
+        "https://data.scielo.org/api/search"
+    ]
+    
     resultados_unicos = {} 
     
     if isinstance(api_tokens, str):
@@ -240,23 +245,26 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
         
     for token in api_tokens:
         headers = {"X-Dataverse-key": token} if token else {}
-        for autora in lista_autoras:
-            params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
-            try:
-                resposta = requests.get(url_busca, headers=headers, params=params)
-                if resposta.status_code == 200:
-                    itens = resposta.json().get('data', {}).get('items', [])
-                    for item in itens:
-                        identificador = item.get('global_id')
-                        if identificador not in resultados_unicos:
-                             resultados_unicos[identificador] = {
-                                "Título da base": item.get('name', '[sem título]'),
-                                "Autores": "; ".join(item.get('authors', [])),
-                                "Identificador": identificador,
-                                "Link de acesso": item.get('url')
-                            }
-            except Exception:
-                continue
+        
+        for url_busca in urls_busca: # Faz a varredura em cada repositório
+            for autora in lista_autoras:
+                params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
+                try:
+                    resposta = requests.get(url_busca, headers=headers, params=params)
+                    if resposta.status_code == 200:
+                        itens = resposta.json().get('data', {}).get('items', [])
+                        for item in itens:
+                            identificador = item.get('global_id')
+                            if identificador not in resultados_unicos:
+                                 resultados_unicos[identificador] = {
+                                    "Título da base": item.get('name', '[sem título]'),
+                                    "Autores": "; ".join(item.get('authors', [])),
+                                    "Identificador": identificador,
+                                    "Link de acesso": item.get('url')
+                                }
+                except Exception:
+                    continue
+                    
     return pd.DataFrame(list(resultados_unicos.values()))
 
 @st.cache_data(ttl=86400)
