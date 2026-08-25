@@ -702,7 +702,7 @@ with aba_equipe:
         "Passos, Ana Beatriz",
         "Plastino, Luisa Mozetic",
         "Zambom, Mariana Morais",
-        "Balbuglio, Balbuglio",
+        "Balbuglio, Viviane",
         "Castro, Maria Eduarda de",
         "Santos, Natália Santana dos",
         "Milfont, Iasmin",
