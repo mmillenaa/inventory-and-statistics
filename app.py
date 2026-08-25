@@ -34,7 +34,6 @@ st.set_page_config(layout="wide", page_title="Inventário e estatísticas de col
 # ============================================================
 def check_password():
     def password_entered():
-        # Usa .get() para evitar o KeyError caso a variável não exista na sessão
         if st.session_state.get("input_senha") == st.secrets["senha_porta"]:
             st.session_state["password_correct"] = True
         else:
@@ -230,6 +229,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
          df_consolidado = df_consolidado.loc[:, ~df_consolidado.columns.str.contains('^Unnamed')]
     return df_consolidado
 
+# ======================= FUNÇÃO CORRIGIDA =======================
 @st.cache_data(ttl=3600)
 def buscar_producao_autoras(api_tokens, lista_autoras):
     resultados_unicos = {} 
@@ -238,7 +238,24 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
         api_tokens = [api_tokens]
         
     for autora in lista_autoras:
+        # Constrói formas de busca para o SciELO
+        partes = autora.split(", ")
+        if len(partes) == 2:
+            nome_invertido = f"{partes[1]} {partes[0]}"
+        else:
+            nome_invertido = autora
 
+        # Lista de consultas a tentar (ordem de prioridade)
+        queries_scielo = [
+            f'"{autora}"',                     # ex: "Balbuglio, Viviane"
+            f'"{nome_invertido}"',             # ex: "Viviane Balbuglio"
+            f'author:"{autora}"',
+            f'author:"{nome_invertido}"',
+            autora,
+            nome_invertido
+        ]
+
+        # Primeiro tenta no FGV Dataverse (com token)
         for token in api_tokens:
             headers = {"X-Dataverse-key": token} if token else {}
             url_fgv = "https://dataverse.fgv.br/api/search"
@@ -248,49 +265,56 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
                 if res_fgv.status_code == 200:
                     itens = res_fgv.json().get('data', {}).get('items', [])
                     for item in itens:
-                        identificador = item.get('global_id')
-                        if identificador not in resultados_unicos:
-                            resultados_unicos[identificador] = {
+                        ident = item.get('global_id')
+                        if ident and ident not in resultados_unicos:
+                            resultados_unicos[ident] = {
                                 "Título da base": item.get('name', '[sem título]'),
-                                "Autores": "; ".join(item.get('authors', [])),
-                                "Identificador": identificador,
-                                "Link de acesso": item.get('url')
+                                "Autores": "; ".join(item.get('authors', [])) if isinstance(item.get('authors'), list) else str(item.get('authors', '')),
+                                "Identificador": ident,
+                                "Link de acesso": item.get('url', '')
                             }
             except Exception:
                 pass
 
-        partes_nome = autora.split(", ")
-        if len(partes_nome) == 2:
-            nome_busca_scielo = f"{partes_nome[1]} {partes_nome[0]}"
-        else:
-            nome_busca_scielo = autora
-
+        # Depois tenta no SciELO Data (sem token) com múltiplas consultas
         url_scielo = "https://data.scielo.org/api/search"
-
-        params_scielo = {
-            "q": nome_busca_scielo, 
-            "type": "dataset", 
-            "subtree": "brrdgv", 
-            "per_page": 100
-        }
-        try:
-            res_scielo = requests.get(url_scielo, params=params_scielo)
-            if res_scielo.status_code == 200:
-                itens = res_scielo.json().get('data', {}).get('items', [])
-                for item in itens:
-                    identificador = item.get('global_id')
-                    if identificador not in resultados_unicos:
-                        resultados_unicos[identificador] = {
-                            "Título da base": item.get('name', '[sem título]'),
-                            "Autores": "; ".join(item.get('authors', [])),
-                            "Identificador": identificador,
-                            "Link de acesso": item.get('url')
-                        }
-        except Exception:
-            pass
+        encontrou = False
+        for q in queries_scielo:
+            if encontrou:
+                break
+            params_scielo = {
+                "q": q,
+                "type": "dataset",
+                "per_page": 100
+                # subtree removido para pesquisar em todo o SciELO Data
+            }
+            try:
+                res_scielo = requests.get(url_scielo, params=params_scielo)
+                if res_scielo.status_code == 200:
+                    itens = res_scielo.json().get('data', {}).get('items', [])
+                    if itens:
+                        for item in itens:
+                            ident = item.get('global_id')
+                            if ident and ident not in resultados_unicos:
+                                # Extrai autores com segurança
+                                autores_raw = item.get('authors', [])
+                                if isinstance(autores_raw, list):
+                                    autores_str = "; ".join(autores_raw)
+                                else:
+                                    autores_str = str(autores_raw) if autores_raw else ""
+                                resultados_unicos[ident] = {
+                                    "Título da base": item.get('name', '[sem título]'),
+                                    "Autores": autores_str,
+                                    "Identificador": ident,
+                                    "Link de acesso": item.get('url', '')
+                                }
+                        encontrou = True  # Se encontrou pelo menos um, para de tentar outras consultas
+            except Exception:
+                pass
                 
     return pd.DataFrame(list(resultados_unicos.values()))
-    
+# ============================================================
+
 @st.cache_data(ttl=86400)
 def extrair_equipe_fgv():
     url = "https://direitosp.fgv.br/grupos-de-pesquisa/grupo-pesquisa-direito-violencia-estado"
