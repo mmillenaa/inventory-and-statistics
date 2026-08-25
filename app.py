@@ -246,9 +246,10 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
     for token in api_tokens:
         headers = {"X-Dataverse-key": token} if token else {}
         
-        for url_busca in urls_busca: # Faz a varredura em cada repositório
+        for url_busca in urls_busca: 
             for autora in lista_autoras:
-                params = {"q": f'"{autora}"', "type": "dataset", "per_page": 100}
+                # AQUI ESTÁ A CORREÇÃO: a variável 'autora' agora vai sem aspas duplas estritas
+                params = {"q": autora, "type": "dataset", "per_page": 100}
                 try:
                     resposta = requests.get(url_busca, headers=headers, params=params)
                     if resposta.status_code == 200:
