@@ -513,9 +513,6 @@ with aba_inventario:
         except ValueError:
             st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
             
-    st.subheader(traduzir("Visualização detalhada"))
-    df_exibicao = df_filtrado.copy().reset_index(drop=True)
-    # Botão "Gerar inventário" removido conforme solicitado
 
 # ============================================================
 # ABA 2: VISÃO GERAL DO ACERVO (CORRIGIDA)
