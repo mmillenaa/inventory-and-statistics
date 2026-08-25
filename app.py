@@ -93,8 +93,8 @@ def traduzir(texto_pt):
         "Frequência de datas grafadas nos documentos": {"English": "Frequency of dates written in documents", "Español": "Frecuencia de fechas escritas en los documentos"},
         "Volume documental": {"English": "Documentary volume", "Español": "Volumen documental"},
         "Distribuição estatística": {"English": "Statistical distribution", "Español": "Distribución estadística"},
+        "Visualização detalhada": {"English": "Detailed view", "Español": "Vista detallada"},
         "Instrumentos de pesquisa": {"English": "Research instruments", "Español": "Instrumentos de investigación"},
-        "Gerar inventário do acervo": {"English": "Generate collection inventory", "Español": "Generar inventario del acervo"},
         "Acervo documental digitalizado": {"English": "Digitised documentary collection", "Español": "Colección documental digitalizada"},
         "Controle descritivo dos conjuntos documentais sob guarda ou análise do grupo.": {"English": "Descriptive control of documentary sets under custody or analysis by the group.", "Español": "Control descriptivo de los conjuntos documentales bajo custodia o análisis del grupo."},
         "Fotografia (FOT)": {"English": "Photography (FOT)", "Español": "Fotografía (FOT)"},
@@ -228,7 +228,6 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
          df_consolidado = df_consolidado.loc[:, ~df_consolidado.columns.str.contains('^Unnamed')]
     return df_consolidado
 
-# ======================= FUNÇÃO CORRIGIDA =======================
 @st.cache_data(ttl=3600)
 def buscar_producao_autoras(api_tokens, lista_autoras):
     resultados_unicos = {} 
@@ -237,24 +236,21 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
         api_tokens = [api_tokens]
         
     for autora in lista_autoras:
-        # Constrói formas de busca para o SciELO
         partes = autora.split(", ")
         if len(partes) == 2:
             nome_invertido = f"{partes[1]} {partes[0]}"
         else:
             nome_invertido = autora
 
-        # Lista de consultas a tentar (ordem de prioridade)
         queries_scielo = [
-            f'"{autora}"',                     # ex: "Balbuglio, Viviane"
-            f'"{nome_invertido}"',             # ex: "Viviane Balbuglio"
+            f'"{autora}"',
+            f'"{nome_invertido}"',
             f'author:"{autora}"',
             f'author:"{nome_invertido}"',
             autora,
             nome_invertido
         ]
 
-        # Primeiro tenta no FGV Dataverse (com token)
         for token in api_tokens:
             headers = {"X-Dataverse-key": token} if token else {}
             url_fgv = "https://dataverse.fgv.br/api/search"
@@ -275,7 +271,6 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
             except Exception:
                 pass
 
-        # Depois tenta no SciELO Data (sem token) com múltiplas consultas
         url_scielo = "https://data.scielo.org/api/search"
         encontrou = False
         for q in queries_scielo:
@@ -285,7 +280,6 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
                 "q": q,
                 "type": "dataset",
                 "per_page": 100
-                # subtree removido para pesquisar em todo o SciELO Data
             }
             try:
                 res_scielo = requests.get(url_scielo, params=params_scielo)
@@ -295,7 +289,6 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
                         for item in itens:
                             ident = item.get('global_id')
                             if ident and ident not in resultados_unicos:
-                                # Extrai autores com segurança
                                 autores_raw = item.get('authors', [])
                                 if isinstance(autores_raw, list):
                                     autores_str = "; ".join(autores_raw)
@@ -307,12 +300,11 @@ def buscar_producao_autoras(api_tokens, lista_autoras):
                                     "Identificador": ident,
                                     "Link de acesso": item.get('url', '')
                                 }
-                        encontrou = True  # Se encontrou pelo menos um, para de tentar outras consultas
+                        encontrou = True
             except Exception:
                 pass
                 
     return pd.DataFrame(list(resultados_unicos.values()))
-# ============================================================
 
 @st.cache_data(ttl=86400)
 def extrair_equipe_fgv():
@@ -520,9 +512,13 @@ with aba_inventario:
             
         except ValueError:
             st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
+            
+    st.subheader(traduzir("Visualização detalhada"))
+    df_exibicao = df_filtrado.copy().reset_index(drop=True)
+    # Botão "Gerar inventário" removido conforme solicitado
 
 # ============================================================
-# ABA 2: VISÃO GERAL DO ACERVO
+# ABA 2: VISÃO GERAL DO ACERVO (CORRIGIDA)
 # ============================================================
 html_arvore = """
 <style>
@@ -551,15 +547,18 @@ html_arvore = """
 <details>
 <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
 <details>
-<summary>Subsérie: Criar, construir, inaugurar</summary>
-<div class="item-simples">Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</div>
-<div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
+<summary>Subsérie: Criar, construir, inaugurar (1952-1978)</summary>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
-
 <details>
-<summary>Subsérie: Penitenciárias e presídios - Casa de Detenção de São Paulo no Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
+<summary>Subsérie: Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</summary>
 <div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+<details>
+<summary>Subsérie: Penitenciárias e presídios — Casa de Detenção de São Paulo no Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
+<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 </details>
@@ -568,14 +567,14 @@ html_arvore = """
 <summary><strong>Série: Processo criminal - Massacre do Carandiru</strong></summary>
 <details>
 <summary>Subsérie: Laudos de lesão corporal</summary>
-<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
 </details>
 </details>
 
 <details>
 <summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
 <details>
-<summary>Subsérie: Demolição dos pavilhões 2 e 5 da Casa de Detenção e clippings de repercussão midiática</summary>
+<summary>Subsérie: Demolição e implosão dos pavilhões 2, 5, 6, 8 e 9 da Casa de Detenção e clippings de repercussão midiática</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
@@ -586,7 +585,6 @@ html_arvore = """
 <details>
 <summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
-<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 </details>
@@ -595,6 +593,7 @@ html_arvore = """
 <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
+<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 <details>
@@ -631,7 +630,7 @@ html_arvore = """
 <details>
 <summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
 <details>
-<summary>Subsérie: A construcción jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
+<summary>Subsérie: A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
 </details>
 </details>
@@ -691,7 +690,6 @@ with aba_equipe:
     with st.spinner("Extraindo informações da web..."):
         lista_equipe = extrair_equipe_fgv()
         
-    # Lógica estruturada para distribuição exata de itens (6, 6, 7) e numeração sequencial
     colunas_equipe = st.columns(3)
     fatias_lista = [lista_equipe[:6], lista_equipe[6:12], lista_equipe[12:]]
     contador = 1
@@ -734,7 +732,7 @@ with aba_equipe:
     with st.spinner("Consultando o repositório..."):
         df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas)
     
-    # --- INSERÇÃO MANUAL DA PUBLICAÇÃO DE VIVIANE BALBUGLIO ---
+    # Inserção manual da publicação de Viviane Balbuglio
     registro_manual = pd.DataFrame([{
         "Título da base": "A construção jurídica da identificação indígena de “pelo menos” cinco homens mortos no contexto de massacre prisional do AM, em 2017",
         "Autores": "Balbuglio, Viviane",
@@ -742,14 +740,11 @@ with aba_equipe:
         "Link de acesso": "https://data.scielo.org/dataset.xhtml?persistentId=doi:10.48331/SCIELODATA.HQACHL"
     }])
     
-    # Concatena com o DataFrame existente (se houver) ou usa apenas o manual
     if df_producao.empty:
         df_producao = registro_manual
     else:
-        # Verifica se o registro já não existe para evitar duplicidade
         if not df_producao['Identificador'].str.contains('10.48331/SCIELODATA.HQACHL', na=False).any():
             df_producao = pd.concat([df_producao, registro_manual], ignore_index=True)
-    # ----------------------------------------------------------
     
     if not df_producao.empty:
         st.data_editor(
