@@ -1,4 +1,5 @@
 # Inventory and Statistics of GPDVE Collections
+![Python](https://img.shields.io/badge/Python-3.14%2B-3776AB?style=flat&logo=python&logoColor=white)
 
 A local Streamlit application for consolidating, exploring, and analysing structured archival metadata, enabling transversal statistical generation across collections. Designed for cataloguing and archival description, it supports the management of photographic archives and primary written sources in compliance with national and international archival standards, including CONARQ, NOBRADE, and ISAD(G).
 <img src="https://github.com/user-attachments/assets/73c92635-287d-4530-afeb-9015b83f2d13" width="933" height="448" />
