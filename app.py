@@ -27,6 +27,23 @@ def normalizar_texto(texto, stemmer):
     palavras_stem = [stemmer.stem(p) for p in palavras]
     return ' '.join(palavras_stem)
 
+def norm_nome_arquivo(nome):
+    """Normaliza nomes de arquivo para matching tolerante a variações.
+    Remove: caracteres invisíveis (LTR/RTL marks, ZWSP, BOM), acentos,
+    extensões, espaços, hífens e underscores."""
+    if not isinstance(nome, str):
+        return ""
+    # Remove caracteres invisíveis de controle de direção / largura zero
+    nome = re.sub(r'[\u200b-\u200f\u202a-\u202e\u2060\ufeff]', '', nome)
+    # Remove acentos
+    nome = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('utf-8')
+    nome = nome.lower().strip()
+    # Remove extensão .xls / .xlsx
+    nome = re.sub(r'\.xlsx?$', '', nome)
+    # Remove separadores
+    nome = re.sub(r'[\s\-_]+', '', nome)
+    return nome
+
 st.set_page_config(layout="wide", page_title="Inventário e estatísticas de coleções")
 
 # ============================================================
@@ -119,7 +136,8 @@ def traduzir(texto_pt):
         "Gênero documental": {"English": "Documentary genre", "Español": "Género documental"},
         "Espécie/Tipo documental": {"English": "Documentary species/type", "Español": "Especie/Tipo documental"},
         "Técnica de registro": {"English": "Recording technique", "Español": "Técnica de registro"},
-        "Arquivo_origem": {"English": "Source file", "Español": "Archivo de origen"}
+        "Arquivo_origem": {"English": "Source file", "Español": "Archivo de origen"},
+        "Sem descrição cadastrada para:": {"English": "No description registered for:", "Español": "Sin descripción registrada para:"}
     }
     if idioma == "Português" or texto_pt not in dicionario:
         return texto_pt
@@ -401,9 +419,9 @@ with aba_inventario:
 
     descricoes_planilhas = {
         "BR-SPAPESP_CPOS.xlsx": {
-            "Português": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP.",
-            "English": "Inventory of the structural plans by Companhia Paulista de Obras e Serviços (CPOS) concerning the Casa de Detenção. Dataset ready, but use subject to APESP authorisation.",
-            "Español": "Inventario de los planos estructurales de la Companhia Paulista de Obras e Serviços (CPOS) relativos a la Casa de Detención. Base lista, pero con uso condicionado a la autorización del APESP."
+            "Português": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP para futuras bases de dados.",
+            "English": "Inventory of the structural plans by Companhia Paulista de Obras e Serviços (CPOS) concerning the Casa de Detenção. Dataset ready, but use subject to APESP authorisation for future databases.",
+            "Español": "Inventario de los planos estructurales de la Companhia Paulista de Obras e Serviços (CPOS) relativos a la Casa de Detención. Base lista, pero con uso condicionado a la autorización del APESP para futuras bases de datos."
         },
         "BR-SPAPESP_DASP.xlsx": {
             "Português": "Inventário de documentos e fotografias do fundo Diários Associados (DASP) sobre penitenciárias e a Casa de Detenção. Base pronta e autorizada para uso em futuras bases de dados.",
@@ -442,6 +460,10 @@ with aba_inventario:
         },
     }
 
+    # Lookup normalizado — tolera caracteres invisíveis, extensão em maiúsculas,
+    # acentos, espaços, hífens e underscores diferentes.
+    descricoes_norm = {norm_nome_arquivo(k): v for k, v in descricoes_planilhas.items()}
+
     pasta_acervo = "."
     arquivos = [f for f in os.listdir(pasta_acervo) if f.lower().endswith(('.xlsx', '.xls'))]
     if not arquivos:
@@ -457,11 +479,33 @@ with aba_inventario:
     # --- Descrições contextuais das planilhas selecionadas (texto corrido) ---
     if selecionados:
         partes = []
+        sem_descricao = []
         for arq in selecionados:
-            trads = descricoes_planilhas.get(arq, {})
-            desc = trads.get(idioma) or trads.get("Português") or traduzir("Descrição não disponível para esta planilha.")
+            # Tenta 1: match exato
+            trads = descricoes_planilhas.get(arq)
+            # Tenta 2: match normalizado (lida com LTR marks, extensão, acentos, etc.)
+            if trads is None:
+                trads = descricoes_norm.get(norm_nome_arquivo(arq))
+            # Tenta 3: match por prefixo normalizado (fallback extra)
+            if trads is None:
+                alvo = norm_nome_arquivo(arq)
+                for k_norm, v in descricoes_norm.items():
+                    if alvo and (alvo in k_norm or k_norm in alvo):
+                        trads = v
+                        break
+
+            if not trads:
+                sem_descricao.append(arq)
+                continue
+
+            desc = trads.get(idioma) or trads.get("Português") or ""
             partes.append(f"<span class='desc-nome'>{arq}</span>: {desc}")
-        st.markdown(f"<div class='desc-lista'>{' '.join(partes)}</div>", unsafe_allow_html=True)
+
+        if partes:
+            st.markdown(f"<div class='desc-lista'>{' '.join(partes)}</div>", unsafe_allow_html=True)
+
+        if sem_descricao:
+            st.caption(f"⚠️ {traduzir('Sem descrição cadastrada para:')} {', '.join(sem_descricao)}")
 
     if not selecionados:
         st.stop()
@@ -561,7 +605,6 @@ with aba_inventario:
             st.plotly_chart(fig_linha, use_container_width=True)
 
     elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()]:
-        # Recupera a chave original (em PT) do dicionário temático
         chave_original = next(k for k in dicionario_tematico.keys() if traduzir(k) == visualizacao_selecionada)
         palavras_chave = dicionario_tematico[chave_original]
         texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
