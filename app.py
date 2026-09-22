@@ -102,7 +102,24 @@ def traduzir(texto_pt):
         "Digitalizado (DGZ)": {"English": "Digitised (DGZ)", "Español": "Digitalizado (DGZ)"},
         "Iconográfico (ICO)": {"English": "Iconographic (ICO)", "Español": "Iconográfico (ICO)"},
         "Meio magnético/ótico (MTO)": {"English": "Magnetic/optical media (MTO)", "Español": "Medio magnético/óptico (MTO)"},
-        "Textual (TXT)": {"English": "Textual (TXT)", "Español": "Textual (TXT)"}
+        "Textual (TXT)": {"English": "Textual (TXT)", "Español": "Textual (TXT)"},
+        "Descrição não disponível para esta planilha.": {"English": "Description not available for this spreadsheet.", "Español": "Descripción no disponible para esta hoja de cálculo."},
+        "Nenhum arquivo Excel encontrado na pasta do sistema.": {"English": "No Excel file found in the system folder.", "Español": "No se encontró ningún archivo Excel en la carpeta del sistema."},
+        "Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.": {"English": "There is not enough useful vocabulary in the filtered items to generate the word cloud. Try removing some filters.", "Español": "No hay vocabulario útil suficiente en los elementos filtrados para generar la nube de palabras. Intente eliminar algunos filtros."},
+        "Listagem automatizada das publicações institucionais das autoras do GPDVE.": {"English": "Automated listing of institutional publications by GPDVE researchers.", "Español": "Listado automatizado de las publicaciones institucionales de las autoras del GPDVE."},
+        "Extraindo informações da web...": {"English": "Extracting information from the web...", "Español": "Extrayendo información de la web..."},
+        "Consultando o repositório...": {"English": "Querying the repository...", "Español": "Consultando el repositorio..."},
+        "Acesso restrito - GPDVE": {"English": "Restricted access - GPDVE", "Español": "Acceso restringido - GPDVE"},
+        "Digite a senha de acesso para carregar o acervo:": {"English": "Enter the access password to load the collection:", "Español": "Introduzca la contraseña de acceso para cargar el acervo:"},
+        "Senha incorreta. Acesso negado.": {"English": "Incorrect password. Access denied.", "Español": "Contraseña incorrecta. Acceso denegado."},
+        "Nuvem de palavras (título e conteúdo)": {"English": "Word cloud (title and content)", "Español": "Nube de palabras (título y contenido)"},
+        "Família": {"English": "Family", "Español": "Familia"},
+        "Educação, artes e ofícios": {"English": "Education, arts and crafts", "Español": "Educación, artes y oficios"},
+        "Arquitetura prisional": {"English": "Prison architecture", "Español": "Arquitectura penitenciaria"},
+        "Gênero documental": {"English": "Documentary genre", "Español": "Género documental"},
+        "Espécie/Tipo documental": {"English": "Documentary species/type", "Español": "Especie/Tipo documental"},
+        "Técnica de registro": {"English": "Recording technique", "Español": "Técnica de registro"},
+        "Arquivo_origem": {"English": "Source file", "Español": "Archivo de origen"}
     }
     if idioma == "Português" or texto_pt not in dicionario:
         return texto_pt
@@ -141,7 +158,7 @@ span[data-baseweb="tag"] span { color: white !important; }
     .hierarquia-grid { grid-template-columns: 1fr !important; }
 }
 
-/* Descrições inline das planilhas selecionadas */
+/* Descrições inline das planilhas selecionadas (texto corrido) */
 .desc-lista {
     font-family: 'Source Serif 4', serif;
     font-size: 0.875rem;
@@ -149,9 +166,7 @@ span[data-baseweb="tag"] span { color: white !important; }
     margin-top: 2px;
     margin-bottom: 18px;
     color: rgba(250, 250, 250, 0.72);
-}
-.desc-lista p {
-    margin: 0 0 3px 0;
+    text-align: justify;
 }
 .desc-nome {
     font-family: 'IBM Plex Mono', monospace;
@@ -385,20 +400,52 @@ with aba_inventario:
     }
 
     descricoes_planilhas = {
-        "BR-SPAPESP_CPOS.xlsx": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP.",
-        "BR-SPAPESP_DASP.xlsx": "Inventário de documentos e fotografias do fundo Diários Associados (DASP) sobre penitenciárias e a Casa de Detenção. Base pronta e autorizada para uso em futuras bases de dados.",
-        "BR-SPGPDVE_ARCOENGE.xlsx": "Inventário do acervo Arcoenge sobre a demolição e implosão dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão midiática; pronta, autorizada e em publicação no Dataverse da FGV.",
-        "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": "Subconjunto de notícias/clippings sobre a demolição e implosão no acervo Arcoenge. Complementa a base Arcoenge com a repercussão midiática do processo.",
-        "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": "Inventário de produções audiovisuais sobre a Casa de Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 e extras do filme Carandiru, de Hector Babenco (2002).",
-        "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": "Mapeamento de rememorações e notícias sobre o massacre da Penha (RJ, 2025). Base em progresso no eixo Direito e Violência de Estado.",
-        "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": "Mapeamento de rememorações do massacre do Carandiru (1992). Base em progresso, vinculada à série Mapeamento de rememorações.",
-        "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": "Inventário de notícias e documentos sobre o massacre do Carandiru. Inclui processo criminal e laudos de lesão corporal; base publicada.",
+        "BR-SPAPESP_CPOS.xlsx": {
+            "Português": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP.",
+            "English": "Inventory of the structural plans by Companhia Paulista de Obras e Serviços (CPOS) concerning the Casa de Detenção. Dataset ready, but use subject to APESP authorisation.",
+            "Español": "Inventario de los planos estructurales de la Companhia Paulista de Obras e Serviços (CPOS) relativos a la Casa de Detención. Base lista, pero con uso condicionado a la autorización del APESP."
+        },
+        "BR-SPAPESP_DASP.xlsx": {
+            "Português": "Inventário de documentos e fotografias do fundo Diários Associados (DASP) sobre penitenciárias e a Casa de Detenção. Base pronta e autorizada para uso em futuras bases de dados.",
+            "English": "Inventory of documents and photographs from the Diários Associados fund (DASP) on penitentiaries and the Casa de Detenção. Dataset ready and authorised for use in future databases.",
+            "Español": "Inventario de documentos y fotografías del fondo Diários Associados (DASP) sobre penitenciarías y la Casa de Detención. Base lista y autorizada para uso en futuras bases de datos."
+        },
+        "BR-SPGPDVE_ARCOENGE.xlsx": {
+            "Português": "Inventário do acervo Arcoenge sobre a demolição e implosão dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão midiática; pronta, autorizada e em publicação no Dataverse da FGV.",
+            "English": "Inventory of the Arcoenge collection on the demolition and implosion of pavilions 2, 5, 6, 8 and 9. Includes media coverage clippings; ready, authorised and being published on the FGV Dataverse.",
+            "Español": "Inventario del acervo Arcoenge sobre la demolición e implosión de los pabellones 2, 5, 6, 8 y 9. Incluye clippings de repercusión mediática; lista, autorizada y en publicación en el Dataverse de la FGV."
+        },
+        "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": {
+            "Português": "Subconjunto de notícias/clippings sobre a demolição e implosão no acervo Arcoenge. Complementa a base Arcoenge com a repercussão midiática do processo.",
+            "English": "Subset of news/clippings on the demolition and implosion in the Arcoenge collection. Complements the Arcoenge dataset with media coverage of the process.",
+            "Español": "Subconjunto de noticias/clippings sobre la demolición e implosión en el acervo Arcoenge. Complementa la base Arcoenge con la repercusión mediática del proceso."
+        },
+        "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": {
+            "Português": "Inventário de produções audiovisuais sobre a Casa de Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 e extras do filme Carandiru, de Hector Babenco (2002).",
+            "English": "Inventory of audiovisual productions about the Casa de Detenção/Carandiru. Includes the Penitenciária do Estado in 1928 and extras from the film Carandiru, by Hector Babenco (2002).",
+            "Español": "Inventario de producciones audiovisuales sobre la Casa de Detención/Carandiru. Incluye la Penitenciaría del Estado en 1928 y extras de la película Carandiru, de Hector Babenco (2002)."
+        },
+        "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
+            "Português": "Mapeamento de rememorações e notícias sobre o massacre da Penha (RJ, 2025). Base em progresso no eixo Direito e Violência de Estado.",
+            "English": "Mapping of remembrances and news about the Penha massacre (Rio de Janeiro, 2025). Dataset in progress under the Law and State Violence axis.",
+            "Español": "Mapeo de rememoraciones y noticias sobre la masacre de la Penha (RJ, 2025). Base en progreso en el eje Derecho y Violencia de Estado."
+        },
+        "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
+            "Português": "Mapeamento de rememorações do massacre do Carandiru (1992). Base em progresso, vinculada à série Mapeamento de rememorações.",
+            "English": "Mapping of remembrances of the Carandiru massacre (1992). Dataset in progress, linked to the Mapping of Remembrances series.",
+            "Español": "Mapeo de rememoraciones de la masacre del Carandiru (1992). Base en progreso, vinculada a la serie Mapeo de rememoraciones."
+        },
+        "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": {
+            "Português": "Inventário de notícias e documentos sobre o massacre do Carandiru. Inclui processo criminal e laudos de lesão corporal; base publicada.",
+            "English": "Inventory of news and documents about the Carandiru massacre. Includes criminal proceedings and bodily injury reports; dataset published.",
+            "Español": "Inventario de noticias y documentos sobre la masacre del Carandiru. Incluye proceso penal e informes de lesiones corporales; base publicada."
+        },
     }
 
     pasta_acervo = "."
     arquivos = [f for f in os.listdir(pasta_acervo) if f.lower().endswith(('.xlsx', '.xls'))]
     if not arquivos:
-        st.warning("Nenhum arquivo Excel encontrado na pasta do sistema.")
+        st.warning(traduzir("Nenhum arquivo Excel encontrado na pasta do sistema."))
         st.stop()
 
     selecionados = st.multiselect(
@@ -407,18 +454,14 @@ with aba_inventario:
         default=arquivos
     )
 
-    # --- Descrições contextuais das planilhas selecionadas ---
+    # --- Descrições contextuais das planilhas selecionadas (texto corrido) ---
     if selecionados:
-        linhas = []
+        partes = []
         for arq in selecionados:
             trads = descricoes_planilhas.get(arq, {})
             desc = trads.get(idioma) or trads.get("Português") or traduzir("Descrição não disponível para esta planilha.")
-                    "Descrição não disponível para esta planilha.": {
-            "English": "Description not available for this spreadsheet.",
-            "Español": "Descripción no disponible para esta hoja de cálculo."
-        },
-            linhas.append(f"<p><span class='desc-nome'>{arq}</span>: {desc}</p>")
-        st.markdown(f"<div class='desc-lista'>{''.join(linhas)}</div>", unsafe_allow_html=True)
+            partes.append(f"<span class='desc-nome'>{arq}</span>: {desc}")
+        st.markdown(f"<div class='desc-lista'>{' '.join(partes)}</div>", unsafe_allow_html=True)
 
     if not selecionados:
         st.stop()
@@ -476,7 +519,7 @@ with aba_inventario:
                 valores = [v for v in df_opcoes[col].dropna().unique() if "Unnamed" not in str(v)]
                 
                 filtros_selecionados[col] = st.multiselect(
-                    f"{col}", 
+                    traduzir(col), 
                     sorted(valores), 
                     key=f"f_{col}",
                     format_func=lambda x: dicionario_siglas.get(str(x), str(x))
@@ -499,8 +542,9 @@ with aba_inventario:
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
     opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
+    opcao_nuvem = traduzir("Nuvem de palavras (título e conteúdo)")
     
-    opcoes_menu = [opcao_limpar, opcao_timeline] + list(dicionario_tematico.keys()) + ["Nuvem de palavras (título e conteúdo)"]
+    opcoes_menu = [opcao_limpar, opcao_timeline] + [traduzir(k) for k in dicionario_tematico.keys()] + [opcao_nuvem]
 
     visualizacao_selecionada = st.selectbox(traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1)
 
@@ -516,9 +560,11 @@ with aba_inventario:
             fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
             st.plotly_chart(fig_linha, use_container_width=True)
 
-    elif visualizacao_selecionada in dicionario_tematico:
-        palavras_chave = dicionario_tematico[visualizacao_selecionada]
-        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
+    elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()]:
+        # Recupera a chave original (em PT) do dicionário temático
+        chave_original = next(k for k in dicionario_tematico.keys() if traduzir(k) == visualizacao_selecionada)
+        palavras_chave = dicionario_tematico[chave_original]
+        texto_combinado = " ".join(df_filtrado['Conteúdo (Busca)'].dropna().astype(str)) + " " + " ".join(df_filtrado['Título (Busca)'].dropna().astype(str))
         
         stemmer = get_stemmer()
         texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
@@ -534,7 +580,7 @@ with aba_inventario:
         fig_tema.update_layout(template='plotly_dark', font=dict(family='Source Serif 4, serif', size=15), title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family='Cormorant Garamond, serif', size=24)), coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', xaxis=dict(title='', showgrid=False), yaxis=dict(title='', gridcolor='rgba(120,120,120,0.15)'))
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == "Nuvem de palavras (título e conteúdo)":
+    elif visualizacao_selecionada == opcao_nuvem:
         from wordcloud import WordCloud
         import matplotlib.pyplot as plt
         
@@ -558,7 +604,7 @@ with aba_inventario:
             st.pyplot(fig)
             
         except ValueError:
-            st.warning("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros.")
+            st.warning(traduzir("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros."))
             
 
 # ============================================================
@@ -731,7 +777,7 @@ with aba_equipe:
     st.subheader(traduzir("Equipe do GPDVE"))
     st.markdown(traduzir("Dados extraídos em tempo real da página oficial da FGV Direito SP."))
     
-    with st.spinner("Extraindo informações da web..."):
+    with st.spinner(traduzir("Extraindo informações da web...")):
         lista_equipe = extrair_equipe_fgv()
         
     colunas_equipe = st.columns(3)
@@ -747,7 +793,7 @@ with aba_equipe:
     st.markdown("<br><hr>", unsafe_allow_html=True)
     
     st.subheader(traduzir("Observatório de bases publicadas pelo GPDVE no Dataverse da FGV"))
-    st.markdown("Listagem automatizada das publicações institucionais das autoras do GPDVE.")
+    st.markdown(traduzir("Listagem automatizada das publicações institucionais das autoras do GPDVE."))
   
     chave_original_fgv = st.secrets.get("api_dataverse", "")
     chave_nova = st.secrets.get("api_dataverse_nova", "")
@@ -773,7 +819,7 @@ with aba_equipe:
         "Franco, Millena Miranda"
     ]
     
-    with st.spinner("Consultando o repositório..."):
+    with st.spinner(traduzir("Consultando o repositório...")):
         df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas)
     
     # Inserção manual da publicação de Viviane Balbuglio
