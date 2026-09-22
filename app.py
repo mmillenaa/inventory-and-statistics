@@ -140,6 +140,42 @@ span[data-baseweb="tag"] span { color: white !important; }
     div[data-testid="metric-container"] { padding: 0.8rem; }
     .hierarquia-grid { grid-template-columns: 1fr !important; }
 }
+/* Cards de descrição das planilhas selecionadas */
+.desc-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 18px;
+}
+.desc-card {
+    flex: 1 1 320px;
+    min-width: 240px;
+    padding: 8px 12px;
+    border-left: 3px solid #2f6f8f;
+    background: rgba(47, 111, 143, 0.05);
+    border-radius: 0 8px 8px 0;
+}
+.desc-nome {
+    font-family: 'IBM Plex Mono', monospace;
+    color: #2f6f8f;
+    font-weight: 600;
+    font-size: 0.72rem;
+    margin-bottom: 3px;
+    word-break: break-all;
+    line-height: 1.25;
+}
+.desc-texto {
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    font-style: normal;
+    color: var(--text-color, #333);
+    opacity: 0.72;
+}
+@media (max-width: 768px) {
+    .desc-card { flex: 1 1 100%; }
+}
 </style>
 """
 st.markdown(css_base, unsafe_allow_html=True)
@@ -364,7 +400,16 @@ with aba_inventario:
         "Educação, artes e ofícios": ["escola", "alfabetização", "atividade cultural", "costura"],
         "Arquitetura prisional": ["grade", "cela", "pavilhão", "parede", "portão"]
     }
-
+    descricoes_planilhas = {
+    "BR-SPAPESP_CPOS.xlsx": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP.",
+    "BR-SPAPESP_DASP.xlsx": "Inventário de documentos e fotografias do fundo Diários Associados (DASP) sobre penitenciárias e a Casa de Detenção. Base pronta e autorizada para uso em futuras bases de dados.",
+    "BR-SPGPDVE_ARCOENGE.xlsx": "Inventário do acervo Arcoenge sobre a demolição e implosão dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão midiática; pronta, autorizada e em publicação no Dataverse da FGV.",
+    "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": "Subconjunto de notícias/clippings sobre a demolição e implosão no acervo Arcoenge. Complementa a base Arcoenge com a repercussão midiática do processo.",
+    "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": "Inventário de produções audiovisuais sobre a Casa de Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 e extras do filme Carandiru, de Hector Babenco (2002).",
+    "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": "Mapeamento de rememorações e notícias sobre o massacre da Penha (RJ, 2025). Base em progresso no eixo Direito e Violência de Estado.",
+    "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": "Mapeamento de rememorações do massacre do Carandiru (1992). Base em progresso, vinculada à série Mapeamento de rememorações.",
+    "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": "Inventário de notícias e documentos sobre o massacre do Carandiru. Inclui processo criminal e laudos de lesão corporal; base publicada.",
+}
     pasta_acervo = "."
     arquivos = [f for f in os.listdir(pasta_acervo) if f.lower().endswith(('.xlsx', '.xls'))]
     if not arquivos:
@@ -372,6 +417,33 @@ with aba_inventario:
         st.stop()
 
     selecionados = st.multiselect(traduzir("Selecione as planilhas para integrar:"), arquivos, default=arquivos)
+
+    selecionados = st.multiselect(
+    traduzir("Selecione as planilhas para integrar:"), 
+    arquivos, 
+    default=arquivos
+)
+
+# --- Descrições contextuais das planilhas selecionadas ---
+if selecionados:
+    cards = ""
+    for arq in selecionados:
+        desc = descricoes_planilhas.get(
+            arq, 
+            "Descrição não disponível para esta planilha."
+        )
+        cards += (
+            f"<div class='desc-card'>"
+            f"<div class='desc-nome'>{arq}</div>"
+            f"<div class='desc-texto'>{desc}</div>"
+            f"</div>"
+        )
+    st.markdown(f"<div class='desc-container'>{cards}</div>", unsafe_allow_html=True)
+
+if not selecionados:
+    st.stop()
+
+df_consolidado = carregar_e_cruzar_dados(selecionados, pasta_acervo)
     
     if not selecionados:
         st.stop()
