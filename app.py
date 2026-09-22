@@ -141,41 +141,23 @@ span[data-baseweb="tag"] span { color: white !important; }
     .hierarquia-grid { grid-template-columns: 1fr !important; }
 }
 
-/* Cards de descrição das planilhas selecionadas */
-.desc-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 8px;
+/* Descrições inline das planilhas selecionadas */
+.desc-lista {
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin-top: 2px;
     margin-bottom: 18px;
+    color: rgba(250, 250, 250, 0.72);
 }
-.desc-card {
-    flex: 1 1 320px;
-    min-width: 240px;
-    padding: 8px 12px;
-    border-left: 3px solid #2f6f8f;
-    background: rgba(47, 111, 143, 0.05);
-    border-radius: 0 8px 8px 0;
+.desc-lista p {
+    margin: 0 0 3px 0;
 }
 .desc-nome {
     font-family: 'IBM Plex Mono', monospace;
-    color: #2f6f8f;
+    color: #7BC6CC;
     font-weight: 600;
-    font-size: 0.72rem;
-    margin-bottom: 3px;
-    word-break: break-all;
-    line-height: 1.25;
-}
-.desc-texto {
-    font-family: 'Source Serif 4', serif;
-    font-size: 0.78rem;
-    line-height: 1.35;
-    font-style: normal;
-    color: var(--text-color, #333);
-    opacity: 0.72;
-}
-@media (max-width: 768px) {
-    .desc-card { flex: 1 1 100%; }
+    font-size: 0.94em;
 }
 </style>
 """
