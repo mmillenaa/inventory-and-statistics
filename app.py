@@ -409,19 +409,16 @@ with aba_inventario:
 
     # --- Descrições contextuais das planilhas selecionadas ---
     if selecionados:
-        cards = ""
+        linhas = []
         for arq in selecionados:
-            desc = descricoes_planilhas.get(
-                arq,
-                "Descrição não disponível para esta planilha."
-            )
-            cards += (
-                f"<div class='desc-card'>"
-                f"<div class='desc-nome'>{arq}</div>"
-                f"<div class='desc-texto'>{desc}</div>"
-                f"</div>"
-            )
-        st.markdown(f"<div class='desc-container'>{cards}</div>", unsafe_allow_html=True)
+            trads = descricoes_planilhas.get(arq, {})
+            desc = trads.get(idioma) or trads.get("Português") or traduzir("Descrição não disponível para esta planilha.")
+                    "Descrição não disponível para esta planilha.": {
+            "English": "Description not available for this spreadsheet.",
+            "Español": "Descripción no disponible para esta hoja de cálculo."
+        },
+            linhas.append(f"<p><span class='desc-nome'>{arq}</span>: {desc}</p>")
+        st.markdown(f"<div class='desc-lista'>{''.join(linhas)}</div>", unsafe_allow_html=True)
 
     if not selecionados:
         st.stop()
