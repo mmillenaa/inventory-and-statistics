@@ -169,6 +169,10 @@ def traduzir(texto_pt):
             "English": "Catalogued collection inventory",
             "Español": "Inventario del acervo catalogado",
         },
+        "Iniciativas (Mapeamentos)": {
+            "English": "Initiatives (Mappings)",
+            "Español": "Iniciativas (Mapeos)",
+        },
         "Visão geral do acervo": {
             "English": "Collection overview",
             "Español": "Visión general del acervo",
@@ -255,6 +259,22 @@ def traduzir(texto_pt):
         "Linha do tempo (distribuição cronológica)": {
             "English": "Timeline (chronological distribution)",
             "Español": "Línea de tiempo (distribución cronológica)",
+        },
+        "Linha do Tempo das Iniciativas": {
+            "English": "Initiatives Timeline",
+            "Español": "Línea de tiempo de Iniciativas",
+        },
+        "Pesquisar nas iniciativas...": {
+            "English": "Search initiatives...",
+            "Español": "Buscar en iniciativas...",
+        },
+        "Total de iniciativas mapeadas": {
+            "English": "Total mapped initiatives",
+            "Español": "Total de iniciativas mapeadas",
+        },
+        "Nenhuma iniciativa carregada. Selecione planilhas de MAPEAMENTOS.": {
+            "English": "No initiatives loaded. Select MAPEAMENTOS spreadsheets.",
+            "Español": "No se cargaron iniciativas. Seleccione hojas de MAPEAMENTOS.",
         },
         "Frequência de datas grafadas nos documentos": {
             "English": "Frequency of dates written in documents",
@@ -506,163 +526,131 @@ st.markdown(css_base, unsafe_allow_html=True)
 # ============================================================
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
-    """Consolida planilhas Excel cruzando a aba mestra com as abas de detalhe."""
+    """
+    Consolida planilhas lendo as abas descritivas e ignorando abas mestras (Geral/Controle) 
+    quando for catalogação. Separa e detecta arquivos do tipo MAPEAMENTOS (Iniciativas).
+    """
+    linhas_catalogacao = []
+    linhas_iniciativas = []
 
     def norm_col(texto):
-        return (
-            unicodedata.normalize("NFKD", str(texto))
-            .encode("ASCII", "ignore")
-            .decode("utf-8")
-            .lower()
-        )
+        if pd.isna(texto): return ""
+        return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("utf-8").lower().strip()
 
-    df_consolidado = pd.DataFrame()
-
-    for nome in lista_arquivos:
-        caminho = os.path.join(pasta, nome)
+    for nome_arq in lista_arquivos:
+        caminho = os.path.join(pasta, nome_arq)
         if not os.path.exists(caminho):
             continue
 
         xls = pd.ExcelFile(caminho)
-        aba_mestra = "geral" if "geral" in xls.sheet_names else xls.sheet_names[0]
-        df_mestra = pd.read_excel(xls, sheet_name=aba_mestra)
-        df_mestra["Arquivo_origem"] = nome
-        df_mestra["Título (Busca)"] = "[Título não localizado]"
-        df_mestra["Conteúdo (Busca)"] = ""
-        df_mestra["Data (Busca)"] = ""
-        df_mestra["Notação (Busca)"] = ""
-        df_mestra["Notas (Busca)"] = ""
-
-        # Encontra a coluna de referência ignorando acentos
-        col_ref = next(
-            (
-                c
-                for c in df_mestra.columns
-                if "codigo" in norm_col(c)
-                or "notacao" in norm_col(c)
-                or "unidade" in norm_col(c)
-            ),
-            None,
-        )
-        if not col_ref:
-            col_ref = df_mestra.columns[0]
-
-        # Trava de segurança para erros do Excel (#NOME?, =, - soltos)
-        df_mestra[col_ref] = df_mestra[col_ref].astype(str).str.strip()
-        df_mestra[col_ref] = df_mestra[col_ref].str.replace(
-            r"^[\=\-\+\@]\s*", "", regex=True
-        )
-        df_mestra[col_ref] = df_mestra[col_ref].replace("#NOME?", "")
-
-        # Pula as abas gerais ignorando acentos/maiúsculas
-        abas_detalhe = []
+        
         for aba in xls.sheet_names:
-            aba_sem_acento = norm_col(aba)
-            if aba_sem_acento not in ["geral", "classificacao"]:
-                abas_detalhe.append(aba)
-
-        for aba in abas_detalhe:
-            aba_norm = re.sub(r"[\s\-_]", "", aba).lower()
-
-            indices_mestra = []
-            for idx, row in df_mestra.iterrows():
-                cod_norm = re.sub(r"[\s\-_]", "", str(row[col_ref])).lower()
-                if aba_norm in cod_norm or cod_norm in aba_norm:
-                    indices_mestra.append(idx)
-
-            if not indices_mestra:
+            aba_norm = norm_col(aba)
+            abas_ignoradas = ['classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
+            if aba_norm in abas_ignoradas:
                 continue
 
-            df_det = pd.read_excel(xls, sheet_name=aba)
-            df_det = df_det.dropna(how="all")
+            # Detectar linha de cabeçalho e tipo da aba
+            df_raw = pd.read_excel(xls, sheet_name=aba, header=None, nrows=15)
+            tipo_aba = None
+            linha_header = None
+            
+            for i, row in df_raw.iterrows():
+                row_str = ' '.join(str(v).lower() for v in row if pd.notna(v))
+                if 'título descritivo' in row_str or 'titulo descritivo' in row_str:
+                    tipo_aba = 'catalogacao'
+                    linha_header = i
+                    break
+                elif 'iniciativa' in row_str and ('ano' in row_str or 'data' in row_str or 'título' in row_str or 'titulo' in row_str):
+                    tipo_aba = 'iniciativas'
+                    linha_header = i
+                    break
+            
+            if not tipo_aba:
+                continue
+                
+            df = pd.read_excel(xls, sheet_name=aba, header=linha_header)
+            cols_norm = {c: norm_col(c) for c in df.columns}
+            
+            def get_col(*frags):
+                for c in df.columns:
+                    if any(f in cols_norm[c] for f in frags):
+                        return c
+                return None
 
-            col_t = next(
-                (c for c in df_det.columns if "titulo" in norm_col(c)), None
-            )
-            col_c = next(
-                (
-                    c
-                    for c in df_det.columns
-                    if "conteudo" in norm_col(c) or "assunto" in norm_col(c)
-                ),
-                None,
-            )
-            col_d = next((c for c in df_det.columns if "data" in norm_col(c)), None)
-            col_n = next(
-                (
-                    c
-                    for c in df_det.columns
-                    if "referencia" in norm_col(c)
-                    or "notacao" in norm_col(c)
-                    or "codigo" in norm_col(c)
-                    or "cod" in norm_col(c)
-                ),
-                None,
-            )
-            col_notas = next(
-                (
-                    c
-                    for c in df_det.columns
-                    if "nota" in norm_col(c)
-                    or "condicoes" in norm_col(c)
-                    or "observacao" in norm_col(c)
-                ),
-                None,
-            )
+            if tipo_aba == 'catalogacao':
+                if aba_norm == 'geral':
+                    continue
+                    
+                c_tit = get_col('titulo descritivo', 'titulo')
+                c_con = get_col('conteudo', 'assunto')
+                c_dat = get_col('data')
+                c_cod = get_col('codigo de referencia', 'codigo')
+                c_kw  = get_col('palavras', 'palavra-chave')
+                c_not = get_col('notas', 'observacao', 'condicoes')
+                c_gen = get_col('genero')
+                c_esp = get_col('especie', 'tipo doc')
+                c_tec = get_col('tecnica')
+                
+                for _, r in df.iterrows():
+                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
+                    if not t or t.lower() in ('nan', 'none'):
+                        continue
+                        
+                    linhas_catalogacao.append({
+                        'Arquivo_origem': nome_arq,
+                        'Aba_origem': aba,
+                        'Título (Busca)': t,
+                        'Conteúdo (Busca)': str(r[c_con]).strip() if c_con and pd.notna(r[c_con]) else '',
+                        'Data (Busca)': str(r[c_dat]).strip() if c_dat and pd.notna(r[c_dat]) else '',
+                        'Código de referência': str(r[c_cod]).strip() if c_cod and pd.notna(r[c_cod]) else '',
+                        'Palavras-chave': str(r[c_kw]).strip() if c_kw and pd.notna(r[c_kw]) else '',
+                        'Notas (Busca)': str(r[c_not]).strip() if c_not and pd.notna(r[c_not]) else '',
+                        'Gênero documental': str(r[c_gen]).strip() if c_gen and pd.notna(r[c_gen]) else '',
+                        'Espécie/Tipo documental': str(r[c_esp]).strip() if c_esp and pd.notna(r[c_esp]) else '',
+                        'Técnica de registro': str(r[c_tec]).strip() if c_tec and pd.notna(r[c_tec]) else '',
+                    })
+            
+            elif tipo_aba == 'iniciativas':
+                c_tit = get_col('titulo', 'iniciativa')
+                c_int = get_col('intervencao', 'finalidade')
+                c_ano = get_col('ano', 'data')
+                c_prop = get_col('proponente')
+                c_link = get_col('link', 'fonte')
+                
+                for _, r in df.iterrows():
+                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
+                    if not t or t.lower() in ('nan', 'none'):
+                        continue
+                        
+                    linhas_iniciativas.append({
+                        'Arquivo_origem': nome_arq,
+                        'Iniciativa / Título': t,
+                        'Intervenção': str(r[c_int]).strip() if c_int and pd.notna(r[c_int]) else '',
+                        'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
+                        'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
+                        'Link / Fonte': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
+                    })
 
-            for i, idx_mestra in enumerate(indices_mestra):
-                if i < len(df_det):
-                    r_det = df_det.iloc[i]
-                    t_val = (
-                        str(r_det[col_t]).strip()
-                        if col_t and pd.notna(r_det[col_t])
-                        else "[Título não localizado]"
-                    )
-                    c_val = (
-                        str(r_det[col_c]).strip()
-                        if col_c and pd.notna(r_det[col_c])
-                        else ""
-                    )
-                    d_val = (
-                        str(r_det[col_d]).strip()
-                        if col_d and pd.notna(r_det[col_d])
-                        else ""
-                    )
-                    n_val = (
-                        str(r_det[col_n]).strip()
-                        if col_n and pd.notna(r_det[col_n])
-                        else df_mestra.at[idx_mestra, col_ref]
-                    )
-                    notas_val = (
-                        str(r_det[col_notas]).strip()
-                        if col_notas and pd.notna(r_det[col_notas])
-                        else ""
-                    )
-
-                    df_mestra.at[idx_mestra, "Título (Busca)"] = (
-                        t_val
-                        if t_val.lower() != "nan" and t_val
-                        else "[Título não localizado]"
-                    )
-                    df_mestra.at[idx_mestra, "Conteúdo (Busca)"] = c_val
-                    df_mestra.at[idx_mestra, "Data (Busca)"] = d_val
-                    df_mestra.at[idx_mestra, "Notação (Busca)"] = n_val
-                    df_mestra.at[idx_mestra, "Notas (Busca)"] = notas_val
-                else:
-                    df_mestra.at[idx_mestra, "Notação (Busca)"] = df_mestra.at[
-                        idx_mestra, col_ref
-                    ]
-
-        df_consolidado = pd.concat(
-            [df_consolidado, df_mestra], ignore_index=True
-        )
-
-    if not df_consolidado.empty:
-        df_consolidado = df_consolidado.loc[
-            :, ~df_consolidado.columns.str.contains("^Unnamed")
-        ]
-
-    return df_consolidado
+    df_cat = pd.DataFrame(linhas_catalogacao)
+    df_inic = pd.DataFrame(linhas_iniciativas)
+    
+    # Deduplicação segura: garante a não-duplicidade pelo código de referência.
+    if not df_cat.empty and 'Código de referência' in df_cat.columns:
+        df_cat['_cod_limpo'] = df_cat['Código de referência'].fillna('').astype(str).str.strip()
+        df_com_cod = df_cat[df_cat['_cod_limpo'] != ''].drop_duplicates(subset=['_cod_limpo'], keep='first')
+        df_sem_cod = df_cat[df_cat['_cod_limpo'] == '']
+        df_cat = pd.concat([df_com_cod, df_sem_cod], ignore_index=True).drop(columns=['_cod_limpo'])
+        
+    # Garante colunas mínimas caso nenhuma planilha de catalogação seja selecionada
+    if df_cat.empty:
+        df_cat = pd.DataFrame(columns=[
+            'Arquivo_origem', 'Aba_origem', 'Título (Busca)', 'Conteúdo (Busca)', 
+            'Data (Busca)', 'Código de referência', 'Palavras-chave', 'Notas (Busca)', 
+            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro'
+        ])
+        
+    return df_cat, df_inic
 
 
 @st.cache_data(ttl=3600)
@@ -830,11 +818,12 @@ st.caption(
 
 
 # ============================================================
-# CRIAÇÃO DAS ABAS
+# CRIAÇÃO DAS ABAS (4 ABAS AGORA)
 # ============================================================
-aba_inventario, aba_producao, aba_equipe = st.tabs(
+aba_inventario, aba_iniciativas, aba_producao, aba_equipe = st.tabs(
     [
         traduzir("Inventário do acervo catalogado"),
+        traduzir("Iniciativas (Mapeamentos)"),
         traduzir("Visão geral do acervo"),
         traduzir("Equipe e observatório"),
     ]
@@ -1005,8 +994,6 @@ with aba_inventario:
         },
     }
 
-    # Lookup normalizado — tolera caracteres invisíveis, extensão em
-    # maiúsculas, acentos, espaços, hífens e underscores diferentes.
     descricoes_norm = {norm_nome_arquivo(k): v for k, v in descricoes_planilhas.items()}
 
     pasta_acervo = "."
@@ -1023,17 +1010,13 @@ with aba_inventario:
         default=arquivos,
     )
 
-    # --- Descrições contextuais das planilhas selecionadas ---
     if selecionados:
         partes = []
         sem_descricao = []
         for arq in selecionados:
-            # Tenta 1: match exato
             trads = descricoes_planilhas.get(arq)
-            # Tenta 2: match normalizado
             if trads is None:
                 trads = descricoes_norm.get(norm_nome_arquivo(arq))
-            # Tenta 3: match por prefixo normalizado (fallback extra)
             if trads is None:
                 alvo = norm_nome_arquivo(arq)
                 for k_norm, v in descricoes_norm.items():
@@ -1063,7 +1046,8 @@ with aba_inventario:
     if not selecionados:
         st.stop()
 
-    df_consolidado = carregar_e_cruzar_dados(selecionados, pasta_acervo)
+    # Usando a nova função que retorna as duas bases separadas
+    df_consolidado, df_iniciativas = carregar_e_cruzar_dados(selecionados, pasta_acervo)
 
     st.subheader(traduzir("Busca avançada"))
     termo = st.text_input(
@@ -1071,7 +1055,7 @@ with aba_inventario:
     )
     df_filtrado = df_consolidado.copy()
 
-    if termo:
+    if termo and not df_filtrado.empty:
         stemmer = get_stemmer()
         termo_normal = normalizar_texto(termo, stemmer)
         termo_stem = " ".join([stemmer.stem(p) for p in termo_normal.split()])
@@ -1114,7 +1098,7 @@ with aba_inventario:
     }
 
     filtros_selecionados = {}
-    if cols_exist:
+    if cols_exist and not df_filtrado.empty:
         l_cols = st.columns(len(cols_exist))
         selecoes_ativas = {
             c: st.session_state.get(f"f_{c}", []) for c in cols_exist
@@ -1159,9 +1143,12 @@ with aba_inventario:
     df_metricas = df_metricas.replace(r"^\s*$", pd.NA, regex=True).replace(
         "[Título não localizado]", pd.NA
     )
-    col3.metric(
-        traduzir("Metadados indexados (total)"), df_metricas.notna().sum().sum()
-    )
+    if not df_metricas.empty:
+        col3.metric(
+            traduzir("Metadados indexados (total)"), df_metricas.notna().sum().sum()
+        )
+    else:
+        col3.metric(traduzir("Metadados indexados (total)"), 0)
 
     st.subheader(traduzir("Análises e visualizações do acervo"))
     opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
@@ -1180,55 +1167,59 @@ with aba_inventario:
         index=1,
     )
 
-    if visualizacao_selecionada == opcao_timeline:
+    if visualizacao_selecionada == opcao_timeline and not df_filtrado.empty:
         df_datas = df_filtrado.copy()
-        df_datas["Ano_Extraido"] = (
-            df_datas["Data (Busca)"]
-            .astype(str)
-            .str.extract(r"((?:18|19|20)\d{2})")
-        )
-        df_anos = df_datas.dropna(subset=["Ano_Extraido"])
-
-        if not df_anos.empty:
-            contagem_anos = df_anos["Ano_Extraido"].value_counts().reset_index()
-            contagem_anos.columns = ["Ano", "Frequência"]
-            fig_linha = px.line(
-                contagem_anos.sort_values(by="Ano"),
-                x="Ano",
-                y="Frequência",
-                markers=True,
-                color_discrete_sequence=["#4ba3a6"],
+        if "Data (Busca)" in df_datas.columns:
+            df_datas["Ano_Extraido"] = (
+                df_datas["Data (Busca)"]
+                .astype(str)
+                .str.extract(r"((?:18|19|20)\d{2})")
             )
-            fig_linha.update_layout(
-                template="plotly_dark",
-                font=dict(family="Source Serif 4, serif", size=15),
-                title=dict(
-                    text=traduzir("Frequência de datas grafadas nos documentos"),
-                    font=dict(family="Cormorant Garamond, serif", size=24),
-                ),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(title="", showgrid=False),
-                yaxis=dict(
-                    title=traduzir("Volume documental"),
-                    gridcolor="rgba(120,120,120,0.15)",
-                ),
-            )
-            fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
-            st.plotly_chart(fig_linha, use_container_width=True)
+            df_anos = df_datas.dropna(subset=["Ano_Extraido"])
 
-    elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()]:
+            if not df_anos.empty:
+                contagem_anos = df_anos["Ano_Extraido"].value_counts().reset_index()
+                contagem_anos.columns = ["Ano", "Frequência"]
+                fig_linha = px.line(
+                    contagem_anos.sort_values(by="Ano"),
+                    x="Ano",
+                    y="Frequência",
+                    markers=True,
+                    color_discrete_sequence=["#4ba3a6"],
+                )
+                fig_linha.update_layout(
+                    template="plotly_dark",
+                    font=dict(family="Source Serif 4, serif", size=15),
+                    title=dict(
+                        text=traduzir("Frequência de datas grafadas nos documentos"),
+                        font=dict(family="Cormorant Garamond, serif", size=24),
+                    ),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(title="", showgrid=False),
+                    yaxis=dict(
+                        title=traduzir("Volume documental"),
+                        gridcolor="rgba(120,120,120,0.15)",
+                    ),
+                )
+                fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
+                st.plotly_chart(fig_linha, use_container_width=True)
+
+    elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()] and not df_filtrado.empty:
         chave_original = next(
             k
             for k in dicionario_tematico.keys()
             if traduzir(k) == visualizacao_selecionada
         )
         palavras_chave = dicionario_tematico[chave_original]
-        texto_combinado = (
-            " ".join(df_filtrado["Conteúdo (Busca)"].dropna().astype(str))
-            + " "
-            + " ".join(df_filtrado["Título (Busca)"].dropna().astype(str))
-        )
+        
+        texto_comb_lista = []
+        if "Conteúdo (Busca)" in df_filtrado.columns:
+            texto_comb_lista.append(" ".join(df_filtrado["Conteúdo (Busca)"].dropna().astype(str)))
+        if "Título (Busca)" in df_filtrado.columns:
+            texto_comb_lista.append(" ".join(df_filtrado["Título (Busca)"].dropna().astype(str)))
+            
+        texto_combinado = " ".join(texto_comb_lista)
 
         stemmer = get_stemmer()
         texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
@@ -1277,16 +1268,14 @@ with aba_inventario:
         )
         st.plotly_chart(fig_tema, use_container_width=True)
 
-    elif visualizacao_selecionada == opcao_nuvem:
-        textos_lista = (
-            df_filtrado["Conteúdo (Busca)"].dropna().astype(str).tolist()
-            + df_filtrado["Título (Busca)"].dropna().astype(str).tolist()
-        )
-
+    elif visualizacao_selecionada == opcao_nuvem and not df_filtrado.empty:
+        textos_lista = []
+        if "Conteúdo (Busca)" in df_filtrado.columns:
+            textos_lista += df_filtrado["Conteúdo (Busca)"].dropna().astype(str).tolist()
+        if "Título (Busca)" in df_filtrado.columns:
+            textos_lista += df_filtrado["Título (Busca)"].dropna().astype(str).tolist()
         if "Palavras-chave" in df_filtrado.columns:
-            textos_lista += (
-                df_filtrado["Palavras-chave"].dropna().astype(str).tolist()
-            )
+            textos_lista += df_filtrado["Palavras-chave"].dropna().astype(str).tolist()
 
         texto_completo = " ".join(textos_lista).strip()
 
@@ -1335,8 +1324,61 @@ with aba_inventario:
 
 
 # ============================================================
-# ABA 2: VISÃO GERAL DO ACERVO
+# ABA 2: INICIATIVAS (MAPEAMENTOS)
 # ============================================================
+with aba_iniciativas:
+    
+    if 'df_iniciativas' not in locals() or df_iniciativas.empty:
+        st.info(traduzir("Nenhuma iniciativa carregada. Selecione planilhas de MAPEAMENTOS."))
+    else:
+        termo_inic = st.text_input(traduzir("Pesquisar nas iniciativas..."), key="busca_inic")
+        df_inic_filtrado = df_iniciativas.copy()
+        
+        if termo_inic:
+            mask_inic = df_inic_filtrado.astype(str).apply(
+                lambda x: x.str.contains(termo_inic, case=False, na=False)
+            ).any(axis=1)
+            df_inic_filtrado = df_inic_filtrado[mask_inic]
+            
+        st.metric(traduzir("Total de iniciativas mapeadas"), len(df_inic_filtrado))
+        
+        if "Ano" in df_inic_filtrado.columns:
+            df_inic_datas = df_inic_filtrado.copy()
+            df_inic_datas["Ano_Limpo"] = df_inic_datas["Ano"].astype(str).str.extract(r"((?:19|20)\d{2})")
+            df_inic_anos = df_inic_datas.dropna(subset=["Ano_Limpo"])
+            
+            if not df_inic_anos.empty:
+                contagem_anos_inic = df_inic_anos["Ano_Limpo"].value_counts().reset_index()
+                contagem_anos_inic.columns = ["Ano", "Frequência"]
+                fig_linha_inic = px.line(
+                    contagem_anos_inic.sort_values(by="Ano"), 
+                    x="Ano", 
+                    y="Frequência", 
+                    markers=True, 
+                    color_discrete_sequence=["#7BC6CC"]
+                )
+                fig_linha_inic.update_layout(
+                    template="plotly_dark", 
+                    font=dict(family="Source Serif 4, serif", size=15),
+                    title=dict(
+                        text=traduzir("Linha do Tempo das Iniciativas"), 
+                        font=dict(family="Cormorant Garamond, serif", size=24)
+                    ), 
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)", 
+                    xaxis=dict(title="", showgrid=False), 
+                    yaxis=dict(title=traduzir("Volume documental"), gridcolor="rgba(120,120,120,0.15)")
+                )
+                fig_linha_inic.update_traces(line=dict(width=3), marker=dict(size=8))
+                st.plotly_chart(fig_linha_inic, use_container_width=True)
+
+        st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
+
+
+# ============================================================
+# ABA 3: VISÃO GERAL DO ACERVO
+# ============================================================
+# Adicionando o 'open' nos Níveis 1 (Coleção) e Níveis 2 (Série). Nível 3 (Subsérie) permanece fechado.
 html_arvore = """
 <style>
 .arvore-acervo { font-family: 'Source Serif 4', serif; font-size: 1rem; line-height: 1.5; color: var(--text-color); }
@@ -1358,10 +1400,10 @@ html_arvore = """
 <div class="arvore-acervo">
 
 <!-- COLEÇÃO 1: CARANDIRU -->
-<details>
+<details open>
 <summary><strong>Coleção: Carandiru</strong></summary>
 
-<details>
+<details open>
 <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
 <details>
 <summary>Subsérie: Criar, construir, inaugurar (1952-1978)</summary>
@@ -1380,7 +1422,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Processo criminal - Massacre do Carandiru</strong></summary>
 <details>
 <summary>Subsérie: Laudos de lesão corporal</summary>
@@ -1388,7 +1430,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Arcoenge <span class="sigla-codigo">(ARCOENGE)</span></strong></summary>
 <details>
 <summary>Subsérie: Demolição e implosão dos pavilhões 2, 5, 6, 8 e 9 da Casa de Detenção e clippings de repercussão midiática</summary>
@@ -1397,7 +1439,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Mapeamento de rememorações <span class="sigla-codigo">(MAPEAMENTOS)</span></strong></summary>
 <details>
 <summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
@@ -1406,7 +1448,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
@@ -1424,10 +1466,10 @@ html_arvore = """
 </details>
 
 <!-- COLEÇÃO 2: DIREITO E VIOLÊNCIA DE ESTADO -->
-<details>
+<details open>
 <summary><strong>Coleção: Direito e Violência de Estado</strong></summary>
 
-<details>
+<details open>
 <summary><strong>Série: Mapeamento de rememorações</strong></summary>
 <details>
 <summary>Subsérie: Rememorações e notícias do massacre da Penha no Rio de Janeiro (2025)</summary>
@@ -1436,7 +1478,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Os anteprojetos da Lei de Execução Penal</strong></summary>
 <details>
 <summary>Subsérie: Repositórios de ideias para punir: uma navegação textual pelos anteprojetos da Lei de Execução Penal (1935-1975)</summary>
@@ -1444,7 +1486,7 @@ html_arvore = """
 </details>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Massacre prisional do Amazonas</strong></summary>
 <details>
 <summary>Subsérie: A construção jurídica da identificação indígena de "pelo menos" cinco homens mortos no contexto de massacre prisional do AM, em 2017</summary>
@@ -1455,37 +1497,37 @@ html_arvore = """
 </details>
 
 <!-- COLEÇÃO 3: PROCJURADM -->
-<details>
+<details open>
 <summary><strong>Coleção: Procedimentos judiciais e administrativos <span class="sigla-codigo">(PROCJURADM)</span></strong></summary>
 
-<details>
+<details open>
 <summary><strong>Série: Tribunal de Justiça do Estado de São Paulo <span class="sigla-codigo">(TJSP)</span></strong></summary>
 <div class="item-simples">Subsérie: Processo criminal contra 120 policiais militares <span class="sigla-codigo">(PROCRIM-POLMIL)</span></div>
 <div class="item-simples">Subsérie: Sindicância da Corregedoria dos Presídios de 1992 <span class="sigla-codigo">(SINDIC-CORREGEDPRES)</span></div>
 <div class="item-simples">Subsérie: Processos cíveis de indenização por danos materiais e morais <span class="sigla-codigo">(PROCCIVEL)</span></div>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Assembleia Legislativa do Estado de São Paulo <span class="sigla-codigo">(ALESP)</span></strong></summary>
 <div class="item-simples">Subsérie: Comissão Parlamentar de Inquérito de 1992 <span class="sigla-codigo">(CPI)</span></div>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Ministério Público do Estado de São Paulo <span class="sigla-codigo">(MPSP)</span></strong></summary>
 <div class="item-simples">Subsérie: Inquérito Civil Público de 1992 <span class="sigla-codigo">(INQCIVPUBLICO)</span></div>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Tribunal de Justiça Militar do Estado de São Paulo <span class="sigla-codigo">(TJMSP)</span></strong></summary>
 <div class="item-simples">Subsérie: Sindicância Justiça Militar de 1992 <span class="sigla-codigo">(SINDIC-TJM)</span></div>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Ministério da Justiça <span class="sigla-codigo">(MINJUSTICA)</span></strong></summary>
 <div class="item-simples">Subsérie: Relatório final do Conselho Nacional de Política Criminal e Penitenciária <span class="sigla-codigo">(RELFINAL-CNPCP)</span></div>
 </details>
 
-<details>
+<details open>
 <summary><strong>Série: Conselho Municipal de Preservação do Patrimônio <span class="sigla-codigo">(CONPRESPSP)</span></strong></summary>
 <div class="item-simples">Subsérie: Processo de tombamento <span class="sigla-codigo">(PROCTOM)</span></div>
 </details>
@@ -1499,7 +1541,7 @@ with aba_producao:
 
 
 # ============================================================
-# ABA 3: EQUIPE E OBSERVATÓRIO DATAVERSE
+# ABA 4: EQUIPE E OBSERVATÓRIO DATAVERSE
 # ============================================================
 with aba_equipe:
     st.subheader(traduzir("Equipe do GPDVE"))
