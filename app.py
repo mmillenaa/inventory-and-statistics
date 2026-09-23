@@ -169,9 +169,9 @@ def traduzir(texto_pt):
             "English": "Catalogued collection inventory",
             "Español": "Inventario del acervo catalogado",
         },
-        "Iniciativas de Rememoração": {
-            "English": "Remembrance Initiatives",
-            "Español": "Iniciativas de Rememoración",
+        "Iniciativas (Mapeamentos)": {
+            "English": "Initiatives (Mappings)",
+            "Español": "Iniciativas (Mapeos)",
         },
         "Visão geral do acervo": {
             "English": "Collection overview",
@@ -223,25 +223,13 @@ def traduzir(texto_pt):
                 "Buscar término en hojas de cálculo (ej: niño, puerta, costura)"
             ),
         },
-        "Busca avançada por termo (ex: podcast, exposição, filme)": {
-            "English": (
-                "Advanced search by term (e.g.: podcast, exhibition, film)"
-            ),
-            "Español": (
-                "Búsqueda avanzada por término (ej: podcast, exposición, película)"
-            ),
-        },
         "Filtros categoriais": {
             "English": "Categorical filters",
             "Español": "Filtros categóricos",
         },
-        "Selecione as planilhas do acervo para integrar:": {
-            "English": "Select the collection spreadsheets to integrate:",
-            "Español": "Seleccione las hojas de la colección a integrar:",
-        },
-        "Selecione as planilhas de rememoração:": {
-            "English": "Select the remembrance spreadsheets:",
-            "Español": "Seleccione las hojas de rememoración:",
+        "Selecione as planilhas para integrar:": {
+            "English": "Select the spreadsheets to integrate:",
+            "Español": "Seleccione las hojas de cálculo a integrar:",
         },
         "Indicadores": {"English": "Metrics", "Español": "Indicadores"},
         "Itens exibidos": {
@@ -255,10 +243,6 @@ def traduzir(texto_pt):
         "Metadados indexados (total)": {
             "English": "Indexed metadata (total)",
             "Español": "Metadatos indexados (total)",
-        },
-        "Total de iniciativas mapeadas": {
-            "English": "Total mapped initiatives",
-            "Español": "Total de iniciativas mapeadas",
         },
         "Análises e visualizações do acervo": {
             "English": "Analyses and visualisations of the collection",
@@ -276,9 +260,21 @@ def traduzir(texto_pt):
             "English": "Timeline (chronological distribution)",
             "Español": "Línea de tiempo (distribución cronológica)",
         },
-        "Linha do tempo": {
-            "English": "Timeline",
-            "Español": "Línea de tiempo",
+        "Linha do Tempo das Iniciativas": {
+            "English": "Initiatives Timeline",
+            "Español": "Línea de tiempo de Iniciativas",
+        },
+        "Pesquisar nas iniciativas...": {
+            "English": "Search initiatives...",
+            "Español": "Buscar en iniciativas...",
+        },
+        "Total de iniciativas mapeadas": {
+            "English": "Total mapped initiatives",
+            "Español": "Total de iniciativas mapeadas",
+        },
+        "Nenhuma iniciativa carregada. Selecione planilhas de MAPEAMENTOS.": {
+            "English": "No initiatives loaded. Select MAPEAMENTOS spreadsheets.",
+            "Español": "No se cargaron iniciativas. Seleccione hojas de MAPEAMENTOS.",
         },
         "Frequência de datas grafadas nos documentos": {
             "English": "Frequency of dates written in documents",
@@ -381,10 +377,6 @@ def traduzir(texto_pt):
         "Nuvem de palavras (título e conteúdo)": {
             "English": "Word cloud (title and content)",
             "Español": "Nube de palabras (título y contenido)",
-        },
-        "Nuvem de palavras": {
-            "English": "Word cloud",
-            "Español": "Nube de palabras",
         },
         "Família": {"English": "Family", "Español": "Familia"},
         "Educação, artes e ofícios": {
@@ -530,155 +522,135 @@ st.markdown(css_base, unsafe_allow_html=True)
 
 
 # ============================================================
-# FUNÇÕES DE EXTRAÇÃO E CACHE (Acervo e Iniciativas)
+# FUNÇÕES DE EXTRAÇÃO, CACHE E WEBSCRAPING
 # ============================================================
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
-    """Consolida planilhas Excel cruzando a aba mestra com as abas de detalhe."""
-    # MANTIDO 100% INTACTO CONFORME O SEU CÓDIGO ORIGINAL
+    """
+    Consolida planilhas lendo as abas descritivas e ignorando abas mestras (Geral/Controle) 
+    quando for catalogação. Separa e detecta arquivos do tipo MAPEAMENTOS (Iniciativas).
+    """
+    linhas_catalogacao = []
+    linhas_iniciativas = []
+
     def norm_col(texto):
-        return (
-            unicodedata.normalize("NFKD", str(texto))
-            .encode("ASCII", "ignore")
-            .decode("utf-8")
-            .lower()
-        )
+        if pd.isna(texto): return ""
+        return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("utf-8").lower().strip()
 
-    df_consolidado = pd.DataFrame()
-
-    for nome in lista_arquivos:
-        caminho = os.path.join(pasta, nome)
+    for nome_arq in lista_arquivos:
+        caminho = os.path.join(pasta, nome_arq)
         if not os.path.exists(caminho):
             continue
 
         xls = pd.ExcelFile(caminho)
-        aba_mestra = "geral" if "geral" in xls.sheet_names else xls.sheet_names[0]
-        df_mestra = pd.read_excel(xls, sheet_name=aba_mestra)
-        df_mestra["Arquivo_origem"] = nome
-        df_mestra["Título (Busca)"] = "[Título não localizado]"
-        df_mestra["Conteúdo (Busca)"] = ""
-        df_mestra["Data (Busca)"] = ""
-        df_mestra["Notação (Busca)"] = ""
-        df_mestra["Notas (Busca)"] = ""
-
-        col_ref = next(
-            (
-                c
-                for c in df_mestra.columns
-                if "codigo" in norm_col(c)
-                or "notacao" in norm_col(c)
-                or "unidade" in norm_col(c)
-            ),
-            None,
-        )
-        if not col_ref:
-            col_ref = df_mestra.columns[0]
-
-        df_mestra[col_ref] = df_mestra[col_ref].astype(str).str.strip()
-        df_mestra[col_ref] = df_mestra[col_ref].str.replace(
-            r"^[\=\-\+\@]\s*", "", regex=True
-        )
-        df_mestra[col_ref] = df_mestra[col_ref].replace("#NOME?", "")
-
-        abas_detalhe = []
+        
         for aba in xls.sheet_names:
-            aba_sem_acento = norm_col(aba)
-            if aba_sem_acento not in ["geral", "classificacao"]:
-                abas_detalhe.append(aba)
-
-        for aba in abas_detalhe:
-            aba_norm = re.sub(r"[\s\-_]", "", aba).lower()
-
-            indices_mestra = []
-            for idx, row in df_mestra.iterrows():
-                cod_norm = re.sub(r"[\s\-_]", "", str(row[col_ref])).lower()
-                if aba_norm in cod_norm or cod_norm in aba_norm:
-                    indices_mestra.append(idx)
-
-            if not indices_mestra:
+            aba_norm = norm_col(aba)
+            abas_ignoradas = ['classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
+            if aba_norm in abas_ignoradas:
                 continue
 
-            df_det = pd.read_excel(xls, sheet_name=aba)
-            df_det = df_det.dropna(how="all")
-
-            col_t = next((c for c in df_det.columns if "titulo" in norm_col(c)), None)
-            col_c = next((c for c in df_det.columns if "conteudo" in norm_col(c) or "assunto" in norm_col(c)), None)
-            col_d = next((c for c in df_det.columns if "data" in norm_col(c)), None)
-            col_n = next((c for c in df_det.columns if "referencia" in norm_col(c) or "notacao" in norm_col(c) or "codigo" in norm_col(c) or "cod" in norm_col(c)), None)
-            col_notas = next((c for c in df_det.columns if "nota" in norm_col(c) or "condicoes" in norm_col(c) or "observacao" in norm_col(c)), None)
-
-            for i, idx_mestra in enumerate(indices_mestra):
-                if i < len(df_det):
-                    r_det = df_det.iloc[i]
-                    t_val = str(r_det[col_t]).strip() if col_t and pd.notna(r_det[col_t]) else "[Título não localizado]"
-                    c_val = str(r_det[col_c]).strip() if col_c and pd.notna(r_det[col_c]) else ""
-                    d_val = str(r_det[col_d]).strip() if col_d and pd.notna(r_det[col_d]) else ""
-                    n_val = str(r_det[col_n]).strip() if col_n and pd.notna(r_det[col_n]) else df_mestra.at[idx_mestra, col_ref]
-                    notas_val = str(r_det[col_notas]).strip() if col_notas and pd.notna(r_det[col_notas]) else ""
-
-                    df_mestra.at[idx_mestra, "Título (Busca)"] = t_val if t_val.lower() != "nan" and t_val else "[Título não localizado]"
-                    df_mestra.at[idx_mestra, "Conteúdo (Busca)"] = c_val
-                    df_mestra.at[idx_mestra, "Data (Busca)"] = d_val
-                    df_mestra.at[idx_mestra, "Notação (Busca)"] = n_val
-                    df_mestra.at[idx_mestra, "Notas (Busca)"] = notas_val
-                else:
-                    df_mestra.at[idx_mestra, "Notação (Busca)"] = df_mestra.at[idx_mestra, col_ref]
-
-        df_consolidado = pd.concat([df_consolidado, df_mestra], ignore_index=True)
-
-    if not df_consolidado.empty:
-        df_consolidado = df_consolidado.loc[:, ~df_consolidado.columns.str.contains("^Unnamed")]
-
-    return df_consolidado
-
-
-@st.cache_data
-def carregar_iniciativas(lista_arquivos, pasta):
-    """Novo leitor leve, focado exclusivamente nas colunas de iniciativas."""
-    linhas = []
-    
-    def clean_col(c):
-        if pd.isna(c): return ""
-        return unicodedata.normalize('NFKD', str(c)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
-
-    for nome in lista_arquivos:
-        caminho = os.path.join(pasta, nome)
-        if not os.path.exists(caminho): continue
-        
-        xls = pd.ExcelFile(caminho)
-        aba = 'Geral' if 'Geral' in xls.sheet_names else ('geral' if 'geral' in xls.sheet_names else xls.sheet_names[0])
-        df = pd.read_excel(xls, sheet_name=aba)
-        
-        cols_norm = {c: clean_col(c) for c in df.columns}
-        
-        # Mapeamento para as colunas exatas exigidas do vocabulário controlado
-        col_inic = next((c for c in df.columns if 'nome da iniciativa' in cols_norm[c] or 'iniciativa' in cols_norm[c]), None)
-        col_int = next((c for c in df.columns if 'intervencao' in cols_norm[c]), None)
-        col_abr = next((c for c in df.columns if 'abrangencia' in cols_norm[c]), None)
-        col_mod = next((c for c in df.columns if 'modalidade' in cols_norm[c]), None)
-        col_ano = next((c for c in df.columns if 'ano' in cols_norm[c] or 'data' in cols_norm[c]), None)
-        
-        # Mapeia a coluna de Título que nos MAPEMENTOS está como "02 de outubro", "penha" ou "titulo"
-        col_tit = next((c for c in df.columns if '02 de outubro' in cols_norm[c] or 'penha' in cols_norm[c] or 'titulo' in cols_norm[c]), None)
-        
-        for _, r in df.iterrows():
-            t = str(r[col_tit]).strip() if col_tit and pd.notna(r[col_tit]) else ''
-            inic = str(r[col_inic]).strip() if col_inic and pd.notna(r[col_inic]) else ''
+            # Detectar linha de cabeçalho e tipo da aba
+            df_raw = pd.read_excel(xls, sheet_name=aba, header=None, nrows=15)
+            tipo_aba = None
+            linha_header = None
             
-            if (not t or t.lower() in ['nan', 'none']) and (not inic or inic.lower() in ['nan', 'none']):
+            for i, row in df_raw.iterrows():
+                row_str = ' '.join(str(v).lower() for v in row if pd.notna(v))
+                if 'título descritivo' in row_str or 'titulo descritivo' in row_str:
+                    tipo_aba = 'catalogacao'
+                    linha_header = i
+                    break
+                elif 'iniciativa' in row_str and ('ano' in row_str or 'data' in row_str or 'título' in row_str or 'titulo' in row_str):
+                    tipo_aba = 'iniciativas'
+                    linha_header = i
+                    break
+            
+            if not tipo_aba:
                 continue
                 
-            linhas.append({
-                'Arquivo_origem': nome,
-                'Nome da iniciativa': inic,
-                'Intervenção': str(r[col_int]).strip() if col_int and pd.notna(r[col_int]) else '',
-                'Abrangência': str(r[col_abr]).strip() if col_abr and pd.notna(r[col_abr]) else '',
-                'Modalidade': str(r[col_mod]).strip() if col_mod and pd.notna(r[col_mod]) else '',
-                'Ano': str(r[col_ano]).strip() if col_ano and pd.notna(r[col_ano]) else '',
-                'Título': t
-            })
+            df = pd.read_excel(xls, sheet_name=aba, header=linha_header)
+            cols_norm = {c: norm_col(c) for c in df.columns}
             
-    return pd.DataFrame(linhas)
+            def get_col(*frags):
+                for c in df.columns:
+                    if any(f in cols_norm[c] for f in frags):
+                        return c
+                return None
+
+            if tipo_aba == 'catalogacao':
+                if aba_norm == 'geral':
+                    continue
+                    
+                c_tit = get_col('titulo descritivo', 'titulo')
+                c_con = get_col('conteudo', 'assunto')
+                c_dat = get_col('data')
+                c_cod = get_col('codigo de referencia', 'codigo')
+                c_kw  = get_col('palavras', 'palavra-chave')
+                c_not = get_col('notas', 'observacao', 'condicoes')
+                c_gen = get_col('genero')
+                c_esp = get_col('especie', 'tipo doc')
+                c_tec = get_col('tecnica')
+                
+                for _, r in df.iterrows():
+                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
+                    if not t or t.lower() in ('nan', 'none'):
+                        continue
+                        
+                    linhas_catalogacao.append({
+                        'Arquivo_origem': nome_arq,
+                        'Aba_origem': aba,
+                        'Título (Busca)': t,
+                        'Conteúdo (Busca)': str(r[c_con]).strip() if c_con and pd.notna(r[c_con]) else '',
+                        'Data (Busca)': str(r[c_dat]).strip() if c_dat and pd.notna(r[c_dat]) else '',
+                        'Código de referência': str(r[c_cod]).strip() if c_cod and pd.notna(r[c_cod]) else '',
+                        'Palavras-chave': str(r[c_kw]).strip() if c_kw and pd.notna(r[c_kw]) else '',
+                        'Notas (Busca)': str(r[c_not]).strip() if c_not and pd.notna(r[c_not]) else '',
+                        'Gênero documental': str(r[c_gen]).strip() if c_gen and pd.notna(r[c_gen]) else '',
+                        'Espécie/Tipo documental': str(r[c_esp]).strip() if c_esp and pd.notna(r[c_esp]) else '',
+                        'Técnica de registro': str(r[c_tec]).strip() if c_tec and pd.notna(r[c_tec]) else '',
+                    })
+            
+            elif tipo_aba == 'iniciativas':
+                c_tit = get_col('titulo', 'iniciativa')
+                c_int = get_col('intervencao', 'finalidade')
+                c_ano = get_col('ano', 'data')
+                c_prop = get_col('proponente')
+                c_link = get_col('link', 'fonte')
+                
+                for _, r in df.iterrows():
+                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
+                    if not t or t.lower() in ('nan', 'none'):
+                        continue
+                        
+                    linhas_iniciativas.append({
+                        'Arquivo_origem': nome_arq,
+                        'Iniciativa / Título': t,
+                        'Intervenção': str(r[c_int]).strip() if c_int and pd.notna(r[c_int]) else '',
+                        'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
+                        'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
+                        'Link / Fonte': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
+                    })
+
+    df_cat = pd.DataFrame(linhas_catalogacao)
+    df_inic = pd.DataFrame(linhas_iniciativas)
+    
+    # Deduplicação segura: garante a não-duplicidade pelo código de referência.
+    if not df_cat.empty and 'Código de referência' in df_cat.columns:
+        df_cat['_cod_limpo'] = df_cat['Código de referência'].fillna('').astype(str).str.strip()
+        df_com_cod = df_cat[df_cat['_cod_limpo'] != ''].drop_duplicates(subset=['_cod_limpo'], keep='first')
+        df_sem_cod = df_cat[df_cat['_cod_limpo'] == '']
+        df_cat = pd.concat([df_com_cod, df_sem_cod], ignore_index=True).drop(columns=['_cod_limpo'])
+        
+    # Garante colunas mínimas caso nenhuma planilha de catalogação seja selecionada
+    if df_cat.empty:
+        df_cat = pd.DataFrame(columns=[
+            'Arquivo_origem', 'Aba_origem', 'Título (Busca)', 'Conteúdo (Busca)', 
+            'Data (Busca)', 'Código de referência', 'Palavras-chave', 'Notas (Busca)', 
+            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro'
+        ])
+        
+    return df_cat, df_inic
 
 
 @st.cache_data(ttl=3600)
@@ -827,7 +799,7 @@ def extrair_equipe_fgv():
 
 
 # ============================================================
-# CABEÇALHO DO PROGRAMA E DEFINIÇÕES GLOBAIS
+# CABEÇALHO DO PROGRAMA
 # ============================================================
 st.title(
     traduzir(
@@ -844,47 +816,6 @@ st.caption(
     )
 )
 
-# Separa os arquivos no diretório antes de alimentar as abas
-pasta_acervo = "."
-arquivos_totais = [f for f in os.listdir(pasta_acervo) if f.lower().endswith((".xlsx", ".xls"))]
-
-if not arquivos_totais:
-    st.warning(traduzir("Nenhum arquivo Excel encontrado na pasta do sistema."))
-    st.stop()
-
-# Dividindo listas: Família 3 (Mapeamentos) vs Famílias 1 e 2 (Acervo Geral)
-arquivos_map = [f for f in arquivos_totais if 'MAPEAMENTOS' in f.upper()]
-arquivos_cat = [f for f in arquivos_totais if 'MAPEAMENTOS' not in f.upper()]
-
-# Descrições padronizadas
-descricoes_planilhas = {
-    "BR-SPAPESP_CPOS.xlsx": {
-        "Português": "Inventário das plantas estruturais da Companhia Paulista de Obras e Serviços (CPOS) referentes à Casa de Detenção. Base pronta, mas com uso condicionado à autorização do APESP para futuras bases de dados.",
-    },
-    "BR-SPAPESP_DASP.xlsx": {
-        "Português": "Inventário de documentos e fotografias do fundo Diários Associados (DASP) sobre penitenciárias e a Casa de Detenção. Base pronta e autorizada para uso em futuras bases de dados.",
-    },
-    "BR-SPGPDVE_ARCOENGE.xlsx": {
-        "Português": "Inventário do acervo Arcoenge sobre a demolição e implosão dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão midiática; pronta, autorizada e em publicação no Dataverse da FGV.",
-    },
-    "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": {
-        "Português": "Subconjunto de notícias/clippings sobre a demolição e implosão no acervo Arcoenge. Complementa a base Arcoenge com a repercussão midiática do processo.",
-    },
-    "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": {
-        "Português": "Inventário de produções audiovisuais sobre a Casa de Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 e extras do filme Carandiru, de Hector Babenco (2002).",
-    },
-    "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
-        "Português": "Mapeamento de rememorações e notícias sobre o massacre da Penha (RJ, 2025). Base em progresso no eixo Direito e Violência de Estado.",
-    },
-    "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
-        "Português": "Mapeamento de rememorações do massacre do Carandiru (1992). Base em progresso, vinculada à série Mapeamento de rememorações.",
-    },
-    "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": {
-        "Português": "Inventário de notícias e documentos sobre o massacre do Carandiru. Inclui processo criminal e laudos de lesão corporal; base publicada.",
-    },
-}
-descricoes_norm = {norm_nome_arquivo(k): v for k, v in descricoes_planilhas.items()}
-
 
 # ============================================================
 # CRIAÇÃO DAS ABAS (4 ABAS AGORA)
@@ -892,7 +823,7 @@ descricoes_norm = {norm_nome_arquivo(k): v for k, v in descricoes_planilhas.item
 aba_inventario, aba_iniciativas, aba_producao, aba_equipe = st.tabs(
     [
         traduzir("Inventário do acervo catalogado"),
-        traduzir("Iniciativas de Rememoração"),
+        traduzir("Iniciativas (Mapeamentos)"),
         traduzir("Visão geral do acervo"),
         traduzir("Equipe e observatório"),
     ]
@@ -905,21 +836,184 @@ aba_inventario, aba_iniciativas, aba_producao, aba_equipe = st.tabs(
 with aba_inventario:
     dicionario_tematico = {
         "Família": ["mãe", "filho", "criança", "pai", "avó"],
-        "Educação, artes e ofícios": ["escola", "alfabetização", "atividade cultural", "costura"],
+        "Educação, artes e ofícios": [
+            "escola",
+            "alfabetização",
+            "atividade cultural",
+            "costura",
+        ],
         "Arquitetura prisional": ["grade", "cela", "pavilhão", "parede", "portão"],
     }
 
-    # Seletor exclusivo para Aba 1 (Planilhas de acervo)
-    selecionados_cat = st.multiselect(
-        traduzir("Selecione as planilhas do acervo para integrar:"),
-        arquivos_cat,
-        default=arquivos_cat,
+    descricoes_planilhas = {
+        "BR-SPAPESP_CPOS.xlsx": {
+            "Português": (
+                "Inventário das plantas estruturais da Companhia Paulista de "
+                "Obras e Serviços (CPOS) referentes à Casa de Detenção. Base "
+                "pronta, mas com uso condicionado à autorização do APESP para "
+                "futuras bases de dados."
+            ),
+            "English": (
+                "Inventory of the structural plans by Companhia Paulista de "
+                "Obras e Serviços (CPOS) concerning the Casa de Detenção. "
+                "Dataset ready, but use subject to APESP authorisation for "
+                "future databases."
+            ),
+            "Español": (
+                "Inventario de los planos estructurales de la Companhia "
+                "Paulista de Obras e Serviços (CPOS) relativos a la Casa de "
+                "Detención. Base lista, pero con uso condicionado a la "
+                "autorización del APESP para futuras bases de datos."
+            ),
+        },
+        "BR-SPAPESP_DASP.xlsx": {
+            "Português": (
+                "Inventário de documentos e fotografias do fundo Diários "
+                "Associados (DASP) sobre penitenciárias e a Casa de Detenção. "
+                "Base pronta e autorizada para uso em futuras bases de dados."
+            ),
+            "English": (
+                "Inventory of documents and photographs from the Diários "
+                "Associados fund (DASP) on penitentiaries and the Casa de "
+                "Detenção. Dataset ready and authorised for use in future "
+                "databases."
+            ),
+            "Español": (
+                "Inventario de documentos y fotografías del fondo Diários "
+                "Associados (DASP) sobre penitenciarías y la Casa de "
+                "Detención. Base lista y autorizada para uso en futuras bases "
+                "de datos."
+            ),
+        },
+        "BR-SPGPDVE_ARCOENGE.xlsx": {
+            "Português": (
+                "Inventário do acervo Arcoenge sobre a demolição e implosão "
+                "dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão "
+                "midiática; pronta, autorizada e em publicação no Dataverse "
+                "da FGV."
+            ),
+            "English": (
+                "Inventory of the Arcoenge collection on the demolition and "
+                "implosion of pavilions 2, 5, 6, 8 and 9. Includes media "
+                "coverage clippings; ready, authorised and being published on "
+                "the FGV Dataverse."
+            ),
+            "Español": (
+                "Inventario del acervo Arcoenge sobre la demolición e "
+                "implosión de los pabellones 2, 5, 6, 8 y 9. Incluye "
+                "clippings de repercusión mediática; lista, autorizada y en "
+                "publicación en el Dataverse de la FGV."
+            ),
+        },
+        "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": {
+            "Português": (
+                "Subconjunto de notícias/clippings sobre a demolição e "
+                "implosão no acervo Arcoenge. Complementa a base Arcoenge com "
+                "a repercussão midiática do processo."
+            ),
+            "English": (
+                "Subset of news/clippings on the demolition and implosion in "
+                "the Arcoenge collection. Complements the Arcoenge dataset "
+                "with media coverage of the process."
+            ),
+            "Español": (
+                "Subconjunto de noticias/clippings sobre la demolición e "
+                "implosión en el acervo Arcoenge. Complementa la base "
+                "Arcoenge con la repercusión mediática del proceso."
+            ),
+        },
+        "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": {
+            "Português": (
+                "Inventário de produções audiovisuais sobre a Casa de "
+                "Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 "
+                "e extras do filme Carandiru, de Hector Babenco (2002)."
+            ),
+            "English": (
+                "Inventory of audiovisual productions about the Casa de "
+                "Detenção/Carandiru. Includes the Penitenciária do Estado in "
+                "1928 and extras from the film Carandiru, by Hector Babenco "
+                "(2002)."
+            ),
+            "Español": (
+                "Inventario de producciones audiovisuales sobre la Casa de "
+                "Detención/Carandiru. Incluye la Penitenciaría del Estado en "
+                "1928 y extras de la película Carandiru, de Hector Babenco "
+                "(2002)."
+            ),
+        },
+        "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
+            "Português": (
+                "Mapeamento de rememorações e notícias sobre o massacre da "
+                "Penha (RJ, 2025). Base em progresso no eixo Direito e "
+                "Violência de Estado."
+            ),
+            "English": (
+                "Mapping of remembrances and news about the Penha massacre "
+                "(Rio de Janeiro, 2025). Dataset in progress under the Law "
+                "and State Violence axis."
+            ),
+            "Español": (
+                "Mapeo de rememoraciones y noticias sobre la masacre de la "
+                "Penha (RJ, 2025). Base en progreso en el eje Derecho y "
+                "Violencia de Estado."
+            ),
+        },
+        "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
+            "Português": (
+                "Mapeamento de rememorações do massacre do Carandiru (1992). "
+                "Base em progresso, vinculada à série Mapeamento de "
+                "rememorações."
+            ),
+            "English": (
+                "Mapping of remembrances of the Carandiru massacre (1992). "
+                "Dataset in progress, linked to the Mapping of Remembrances "
+                "series."
+            ),
+            "Español": (
+                "Mapeo de rememoraciones de la masacre del Carandiru (1992). "
+                "Base en progreso, vinculada a la serie Mapeo de "
+                "rememoraciones."
+            ),
+        },
+        "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": {
+            "Português": (
+                "Inventário de notícias e documentos sobre o massacre do "
+                "Carandiru. Inclui processo criminal e laudos de lesão "
+                "corporal; base publicada."
+            ),
+            "English": (
+                "Inventory of news and documents about the Carandiru "
+                "massacre. Includes criminal proceedings and bodily injury "
+                "reports; dataset published."
+            ),
+            "Español": (
+                "Inventario de noticias y documentos sobre la masacre del "
+                "Carandiru. Incluye proceso penal e informes de lesiones "
+                "corporales; base publicada."
+            ),
+        },
+    }
+
+    descricoes_norm = {norm_nome_arquivo(k): v for k, v in descricoes_planilhas.items()}
+
+    pasta_acervo = "."
+    arquivos = [
+        f for f in os.listdir(pasta_acervo) if f.lower().endswith((".xlsx", ".xls"))
+    ]
+    if not arquivos:
+        st.warning(traduzir("Nenhum arquivo Excel encontrado na pasta do sistema."))
+        st.stop()
+
+    selecionados = st.multiselect(
+        traduzir("Selecione as planilhas para integrar:"),
+        arquivos,
+        default=arquivos,
     )
 
-    if selecionados_cat:
+    if selecionados:
         partes = []
         sem_descricao = []
-        for arq in selecionados_cat:
+        for arq in selecionados:
             trads = descricoes_planilhas.get(arq)
             if trads is None:
                 trads = descricoes_norm.get(norm_nome_arquivo(arq))
@@ -938,297 +1032,345 @@ with aba_inventario:
             partes.append(f"<span class='desc-nome'>{arq}</span>: {desc}")
 
         if partes:
-            st.markdown(f"<div class='desc-lista'>{' '.join(partes)}</div>", unsafe_allow_html=True)
-        if sem_descricao:
-            st.caption(f"⚠️ {traduzir('Sem descrição cadastrada para:')} {', '.join(sem_descricao)}")
-
-    if not selecionados_cat:
-        st.info("Nenhuma planilha de acervo selecionada.")
-    else:
-        df_consolidado = carregar_e_cruzar_dados(selecionados_cat, pasta_acervo)
-
-        st.subheader(traduzir("Busca avançada"))
-        termo = st.text_input(
-            traduzir("Pesquisar termo nas planilhas (ex: criança, portão, costura)")
-        )
-        df_filtrado = df_consolidado.copy()
-
-        if termo and not df_filtrado.empty:
-            stemmer = get_stemmer()
-            termo_normal = normalizar_texto(termo, stemmer)
-            termo_stem = " ".join([stemmer.stem(p) for p in termo_normal.split()])
-
-            df_filtrado["NORMAL_BUSCA"] = df_filtrado.apply(
-                lambda row: normalizar_texto(" ".join(row.dropna().astype(str)), stemmer),
-                axis=1,
+            st.markdown(
+                f"<div class='desc-lista'>{' '.join(partes)}</div>",
+                unsafe_allow_html=True,
             )
-            padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
-            mask = df_filtrado["NORMAL_BUSCA"].str.contains(padrao, regex=True, na=False)
-            df_filtrado = df_filtrado[mask].drop(columns=["NORMAL_BUSCA"])
 
-        st.subheader(traduzir("Filtros categoriais"))
-        cols_int = ["Gênero documental", "Espécie/Tipo documental", "Técnica de registro", "Arquivo_origem"]
-        cols_exist = [c for c in cols_int if c in df_consolidado.columns]
+        if sem_descricao:
+            st.caption(
+                f"⚠️ {traduzir('Sem descrição cadastrada para:')} "
+                f"{', '.join(sem_descricao)}"
+            )
 
-        dicionario_siglas = {
-            "FOT": traduzir("Fotografia (FOT)"), "PLN": traduzir("Planta cartográfica (PLN)"),
-            "DGZ": traduzir("Digitalizado (DGZ)"), "ICO": traduzir("Iconográfico (ICO)"),
-            "MTO": traduzir("Meio magnético/ótico (MTO)"), "TXT": traduzir("Textual (TXT)"),
-            "AVS": traduzir("Audiovisual (AVS)"), "FLG": traduzir("Filmográfico (FLG)"),
-            "FME": traduzir("Filme (FME)"), "NOT": traduzir("Notícia (NOT)"),
-            "REL": traduzir("Relatório (REL)"), "NDG": traduzir("Nato-digital (NDG)"),
-            "NDT": traduzir("Não determinado (NDT)"),
+    if not selecionados:
+        st.stop()
+
+    # Usando a nova função que retorna as duas bases separadas
+    df_consolidado, df_iniciativas = carregar_e_cruzar_dados(selecionados, pasta_acervo)
+
+    st.subheader(traduzir("Busca avançada"))
+    termo = st.text_input(
+        traduzir("Pesquisar termo nas planilhas (ex: criança, portão, costura)")
+    )
+    df_filtrado = df_consolidado.copy()
+
+    if termo and not df_filtrado.empty:
+        stemmer = get_stemmer()
+        termo_normal = normalizar_texto(termo, stemmer)
+        termo_stem = " ".join([stemmer.stem(p) for p in termo_normal.split()])
+
+        df_filtrado["NORMAL_BUSCA"] = df_filtrado.apply(
+            lambda row: normalizar_texto(
+                " ".join(row.dropna().astype(str)), stemmer
+            ),
+            axis=1,
+        )
+        padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
+        mask = df_filtrado["NORMAL_BUSCA"].str.contains(
+            padrao, regex=True, na=False
+        )
+        df_filtrado = df_filtrado[mask].drop(columns=["NORMAL_BUSCA"])
+
+    st.subheader(traduzir("Filtros categoriais"))
+    cols_int = [
+        "Gênero documental",
+        "Espécie/Tipo documental",
+        "Técnica de registro",
+        "Arquivo_origem",
+    ]
+    cols_exist = [c for c in cols_int if c in df_consolidado.columns]
+
+    dicionario_siglas = {
+        "FOT": traduzir("Fotografia (FOT)"),
+        "PLN": traduzir("Planta cartográfica (PLN)"),
+        "DGZ": traduzir("Digitalizado (DGZ)"),
+        "ICO": traduzir("Iconográfico (ICO)"),
+        "MTO": traduzir("Meio magnético/ótico (MTO)"),
+        "TXT": traduzir("Textual (TXT)"),
+        "AVS": traduzir("Audiovisual (AVS)"),
+        "FLG": traduzir("Filmográfico (FLG)"),
+        "FME": traduzir("Filme (FME)"),
+        "NOT": traduzir("Notícia (NOT)"),
+        "REL": traduzir("Relatório (REL)"),
+        "NDG": traduzir("Nato-digital (NDG)"),
+        "NDT": traduzir("Não determinado (NDT)"),
+    }
+
+    filtros_selecionados = {}
+    if cols_exist and not df_filtrado.empty:
+        l_cols = st.columns(len(cols_exist))
+        selecoes_ativas = {
+            c: st.session_state.get(f"f_{c}", []) for c in cols_exist
         }
 
-        filtros_selecionados = {}
-        if cols_exist and not df_filtrado.empty:
-            l_cols = st.columns(len(cols_exist))
-            selecoes_ativas = {c: st.session_state.get(f"f_{c}", []) for c in cols_exist}
+        for i, col in enumerate(cols_exist):
+            with l_cols[i]:
+                df_opcoes = df_consolidado.copy()
+                for o_col, sel_vals in selecoes_ativas.items():
+                    if o_col != col and sel_vals:
+                        df_opcoes = df_opcoes[df_opcoes[o_col].isin(sel_vals)]
 
-            for i, col in enumerate(cols_exist):
-                with l_cols[i]:
-                    df_opcoes = df_consolidado.copy()
-                    for o_col, sel_vals in selecoes_ativas.items():
-                        if o_col != col and sel_vals:
-                            df_opcoes = df_opcoes[df_opcoes[o_col].isin(sel_vals)]
-                    valores = [v for v in df_opcoes[col].dropna().unique() if "Unnamed" not in str(v)]
-                    filtros_selecionados[col] = st.multiselect(
-                        traduzir(col), sorted(valores), key=f"f_{col}", format_func=lambda x: dicionario_siglas.get(str(x), str(x)),
-                    )
+                valores = [
+                    v
+                    for v in df_opcoes[col].dropna().unique()
+                    if "Unnamed" not in str(v)
+                ]
 
-        for col, sel in filtros_selecionados.items():
-            if sel:
-                df_filtrado = df_filtrado[df_filtrado[col].isin(sel)]
+                filtros_selecionados[col] = st.multiselect(
+                    traduzir(col),
+                    sorted(valores),
+                    key=f"f_{col}",
+                    format_func=lambda x: dicionario_siglas.get(str(x), str(x)),
+                )
 
-        st.subheader(traduzir("Indicadores"))
-        col1, col2, col3 = st.columns(3)
-        col1.metric(traduzir("Itens exibidos"), len(df_filtrado))
-        if "Gênero documental" in df_filtrado.columns:
-            col2.metric(traduzir("Gêneros documentais"), df_filtrado["Gênero documental"].nunique())
+    for col, sel in filtros_selecionados.items():
+        if sel:
+            df_filtrado = df_filtrado[df_filtrado[col].isin(sel)]
 
-        df_metricas = df_filtrado.drop(columns=["Arquivo_origem", "SUPER_STRING"], errors="ignore")
-        df_metricas = df_metricas.replace(r"^\s*$", pd.NA, regex=True).replace("[Título não localizado]", pd.NA)
-        
-        if not df_metricas.empty:
-            col3.metric(traduzir("Metadados indexados (total)"), df_metricas.notna().sum().sum())
-        else:
-            col3.metric(traduzir("Metadados indexados (total)"), 0)
-
-        st.subheader(traduzir("Análises e visualizações do acervo"))
-        opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
-        opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
-        opcao_nuvem = traduzir("Nuvem de palavras (título e conteúdo)")
-        opcoes_menu = ([opcao_limpar, opcao_timeline] + [traduzir(k) for k in dicionario_tematico.keys()] + [opcao_nuvem])
-
-        visualizacao_selecionada = st.selectbox(
-            traduzir("Escolha uma visualização ou eixo temático:"), opcoes_menu, index=1,
+    st.subheader(traduzir("Indicadores"))
+    col1, col2, col3 = st.columns(3)
+    col1.metric(traduzir("Itens exibidos"), len(df_filtrado))
+    if "Gênero documental" in df_filtrado.columns:
+        col2.metric(
+            traduzir("Gêneros documentais"),
+            df_filtrado["Gênero documental"].nunique(),
         )
 
-        if visualizacao_selecionada == opcao_timeline and not df_filtrado.empty:
-            df_datas = df_filtrado.copy()
-            if "Data (Busca)" in df_datas.columns:
-                df_datas["Ano_Extraido"] = df_datas["Data (Busca)"].astype(str).str.extract(r"((?:18|19|20)\d{2})")
-                df_anos = df_datas.dropna(subset=["Ano_Extraido"])
+    df_metricas = df_filtrado.drop(
+        columns=["Arquivo_origem", "SUPER_STRING"], errors="ignore"
+    )
+    df_metricas = df_metricas.replace(r"^\s*$", pd.NA, regex=True).replace(
+        "[Título não localizado]", pd.NA
+    )
+    if not df_metricas.empty:
+        col3.metric(
+            traduzir("Metadados indexados (total)"), df_metricas.notna().sum().sum()
+        )
+    else:
+        col3.metric(traduzir("Metadados indexados (total)"), 0)
 
-                if not df_anos.empty:
-                    contagem_anos = df_anos["Ano_Extraido"].value_counts().reset_index()
-                    contagem_anos.columns = ["Ano", "Frequência"]
-                    fig_linha = px.line(contagem_anos.sort_values(by="Ano"), x="Ano", y="Frequência", markers=True, color_discrete_sequence=["#4ba3a6"])
-                    fig_linha.update_layout(
-                        template="plotly_dark", font=dict(family="Source Serif 4, serif", size=15),
-                        title=dict(text=traduzir("Frequência de datas grafadas nos documentos"), font=dict(family="Cormorant Garamond, serif", size=24)),
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(title="", showgrid=False),
-                        yaxis=dict(title=traduzir("Volume documental"), gridcolor="rgba(120,120,120,0.15)")
-                    )
-                    fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
-                    st.plotly_chart(fig_linha, use_container_width=True)
+    st.subheader(traduzir("Análises e visualizações do acervo"))
+    opcao_limpar = traduzir("Nenhuma visualização (limpar tela)")
+    opcao_timeline = traduzir("Linha do tempo (distribuição cronológica)")
+    opcao_nuvem = traduzir("Nuvem de palavras (título e conteúdo)")
 
-        elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()] and not df_filtrado.empty:
-            chave_original = next(k for k in dicionario_tematico.keys() if traduzir(k) == visualizacao_selecionada)
-            palavras_chave = dicionario_tematico[chave_original]
+    opcoes_menu = (
+        [opcao_limpar, opcao_timeline]
+        + [traduzir(k) for k in dicionario_tematico.keys()]
+        + [opcao_nuvem]
+    )
+
+    visualizacao_selecionada = st.selectbox(
+        traduzir("Escolha uma visualização ou eixo temático:"),
+        opcoes_menu,
+        index=1,
+    )
+
+    if visualizacao_selecionada == opcao_timeline and not df_filtrado.empty:
+        df_datas = df_filtrado.copy()
+        if "Data (Busca)" in df_datas.columns:
+            df_datas["Ano_Extraido"] = (
+                df_datas["Data (Busca)"]
+                .astype(str)
+                .str.extract(r"((?:18|19|20)\d{2})")
+            )
+            df_anos = df_datas.dropna(subset=["Ano_Extraido"])
+
+            if not df_anos.empty:
+                contagem_anos = df_anos["Ano_Extraido"].value_counts().reset_index()
+                contagem_anos.columns = ["Ano", "Frequência"]
+                fig_linha = px.line(
+                    contagem_anos.sort_values(by="Ano"),
+                    x="Ano",
+                    y="Frequência",
+                    markers=True,
+                    color_discrete_sequence=["#4ba3a6"],
+                )
+                fig_linha.update_layout(
+                    template="plotly_dark",
+                    font=dict(family="Source Serif 4, serif", size=15),
+                    title=dict(
+                        text=traduzir("Frequência de datas grafadas nos documentos"),
+                        font=dict(family="Cormorant Garamond, serif", size=24),
+                    ),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(title="", showgrid=False),
+                    yaxis=dict(
+                        title=traduzir("Volume documental"),
+                        gridcolor="rgba(120,120,120,0.15)",
+                    ),
+                )
+                fig_linha.update_traces(line=dict(width=3), marker=dict(size=8))
+                st.plotly_chart(fig_linha, use_container_width=True)
+
+    elif visualizacao_selecionada in [traduzir(k) for k in dicionario_tematico.keys()] and not df_filtrado.empty:
+        chave_original = next(
+            k
+            for k in dicionario_tematico.keys()
+            if traduzir(k) == visualizacao_selecionada
+        )
+        palavras_chave = dicionario_tematico[chave_original]
+        
+        texto_comb_lista = []
+        if "Conteúdo (Busca)" in df_filtrado.columns:
+            texto_comb_lista.append(" ".join(df_filtrado["Conteúdo (Busca)"].dropna().astype(str)))
+        if "Título (Busca)" in df_filtrado.columns:
+            texto_comb_lista.append(" ".join(df_filtrado["Título (Busca)"].dropna().astype(str)))
             
-            texto_comb_lista = []
-            if "Conteúdo (Busca)" in df_filtrado.columns:
-                texto_comb_lista.append(" ".join(df_filtrado["Conteúdo (Busca)"].dropna().astype(str)))
-            if "Título (Busca)" in df_filtrado.columns:
-                texto_comb_lista.append(" ".join(df_filtrado["Título (Busca)"].dropna().astype(str)))
-                
-            texto_combinado = " ".join(texto_comb_lista)
-            stemmer = get_stemmer()
-            texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
+        texto_combinado = " ".join(texto_comb_lista)
 
-            contagem_termos = {}
-            for palavra in palavras_chave:
-                palavra_stem = normalizar_texto(palavra, stemmer)
-                ocorrencias = len(re.findall(rf"\b{palavra_stem}\b", texto_combinado_normal))
-                contagem_termos[palavra] = ocorrencias
+        stemmer = get_stemmer()
+        texto_combinado_normal = normalizar_texto(texto_combinado, stemmer)
 
-            fig_tema = px.bar(
-                pd.DataFrame(list(contagem_termos.items()), columns=["Termo", "Frequência"]),
-                x="Termo", y="Frequência", text="Frequência", color="Frequência",
-                color_continuous_scale=["#16324F", "#235789", "#2F6F8F", "#4BA3A6", "#7BC6CC"]
+        contagem_termos = {}
+        for palavra in palavras_chave:
+            palavra_stem = normalizar_texto(palavra, stemmer)
+            ocorrencias = len(
+                re.findall(rf"\b{palavra_stem}\b", texto_combinado_normal)
             )
-            fig_tema.update_traces(textposition="outside")
-            fig_tema.update_layout(
-                template="plotly_dark", font=dict(family="Source Serif 4, serif", size=15),
-                title=dict(text=f"{traduzir('Distribuição estatística')} — {visualizacao_selecionada.lower()}", font=dict(family="Cormorant Garamond, serif", size=24)),
-                coloraxis_showscale=False, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(title="", showgrid=False), yaxis=dict(title="", gridcolor="rgba(120,120,120,0.15)")
+            contagem_termos[palavra] = ocorrencias
+
+        fig_tema = px.bar(
+            pd.DataFrame(
+                list(contagem_termos.items()),
+                columns=["Termo", "Frequência"],
+            ),
+            x="Termo",
+            y="Frequência",
+            text="Frequência",
+            color="Frequência",
+            color_continuous_scale=[
+                "#16324F",
+                "#235789",
+                "#2F6F8F",
+                "#4BA3A6",
+                "#7BC6CC",
+            ],
+        )
+        fig_tema.update_traces(textposition="outside")
+        fig_tema.update_layout(
+            template="plotly_dark",
+            font=dict(family="Source Serif 4, serif", size=15),
+            title=dict(
+                text=(
+                    f"{traduzir('Distribuição estatística')} — "
+                    f"{visualizacao_selecionada.lower()}"
+                ),
+                font=dict(family="Cormorant Garamond, serif", size=24),
+            ),
+            coloraxis_showscale=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(title="", showgrid=False),
+            yaxis=dict(title="", gridcolor="rgba(120,120,120,0.15)"),
+        )
+        st.plotly_chart(fig_tema, use_container_width=True)
+
+    elif visualizacao_selecionada == opcao_nuvem and not df_filtrado.empty:
+        textos_lista = []
+        if "Conteúdo (Busca)" in df_filtrado.columns:
+            textos_lista += df_filtrado["Conteúdo (Busca)"].dropna().astype(str).tolist()
+        if "Título (Busca)" in df_filtrado.columns:
+            textos_lista += df_filtrado["Título (Busca)"].dropna().astype(str).tolist()
+        if "Palavras-chave" in df_filtrado.columns:
+            textos_lista += df_filtrado["Palavras-chave"].dropna().astype(str).tolist()
+
+        texto_completo = " ".join(textos_lista).strip()
+
+        stopwords = set(
+            [
+                "de", "a", "o", "que", "e", "do", "da", "em", "um", "para",
+                "com", "não", "uma", "os", "no", "se", "na", "por", "mais",
+                "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu",
+                "sua", "ou", "quando", "muito", "nos", "já", "eu", "também",
+                "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois",
+                "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse",
+                "eles", "você", "essa", "num", "nem", "suas", "meu", "às",
+                "minha", "numa", "pelos", "elas", "qual", "nós", "lhe",
+                "deles", "essas", "esses", "pelas", "este", "dele", "tu",
+                "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua",
+                "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
+                "título", "localizado",
+            ]
+        )
+
+        try:
+            wordcloud = WordCloud(
+                width=800,
+                height=400,
+                background_color="rgba(0,0,0,0)",
+                mode="RGBA",
+                colormap="viridis",
+                stopwords=stopwords,
+                max_words=100,
+            ).generate(texto_completo)
+
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.imshow(wordcloud, interpolation="bilinear")
+            ax.axis("off")
+            fig.patch.set_alpha(0)
+            st.pyplot(fig)
+
+        except ValueError:
+            st.warning(
+                traduzir(
+                    "Não há vocabulário útil suficiente nos itens filtrados "
+                    "para gerar a nuvem de palavras. Tente remover alguns "
+                    "filtros."
+                )
             )
-            st.plotly_chart(fig_tema, use_container_width=True)
-
-        elif visualizacao_selecionada == opcao_nuvem and not df_filtrado.empty:
-            textos_lista = []
-            if "Conteúdo (Busca)" in df_filtrado.columns:
-                textos_lista += df_filtrado["Conteúdo (Busca)"].dropna().astype(str).tolist()
-            if "Título (Busca)" in df_filtrado.columns:
-                textos_lista += df_filtrado["Título (Busca)"].dropna().astype(str).tolist()
-            if "Palavras-chave" in df_filtrado.columns:
-                textos_lista += df_filtrado["Palavras-chave"].dropna().astype(str).tolist()
-
-            texto_completo = " ".join(textos_lista).strip()
-            stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
-
-            try:
-                wordcloud = WordCloud(width=800, height=400, background_color="rgba(0,0,0,0)", mode="RGBA", colormap="viridis", stopwords=stopwords, max_words=100).generate(texto_completo)
-                fig, ax = plt.subplots(figsize=(10, 5))
-                ax.imshow(wordcloud, interpolation="bilinear")
-                ax.axis("off")
-                fig.patch.set_alpha(0)
-                st.pyplot(fig)
-            except ValueError:
-                st.warning(traduzir("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros."))
 
 
 # ============================================================
-# ABA 2: INICIATIVAS DE REMEMORAÇÃO (Mapeamentos)
+# ABA 2: INICIATIVAS (MAPEAMENTOS)
 # ============================================================
 with aba_iniciativas:
     
-    # Seletor exclusivo para Aba 2 (Planilhas de rememoração)
-    selecionados_map = st.multiselect(
-        traduzir("Selecione as planilhas de rememoração:"),
-        arquivos_map,
-        default=arquivos_map,
-    )
-
-    if selecionados_map:
-        partes_map = []
-        sem_descricao_map = []
-        for arq in selecionados_map:
-            trads = descricoes_planilhas.get(arq)
-            if trads is None: trads = descricoes_norm.get(norm_nome_arquivo(arq))
-            if trads is None:
-                alvo = norm_nome_arquivo(arq)
-                for k_norm, v in descricoes_norm.items():
-                    if alvo and (alvo in k_norm or k_norm in alvo):
-                        trads = v
-                        break
-            if not trads:
-                sem_descricao_map.append(arq)
-                continue
-            desc = trads.get(idioma) or trads.get("Português") or ""
-            partes_map.append(f"<span class='desc-nome'>{arq}</span>: {desc}")
-
-        if partes_map:
-            st.markdown(f"<div class='desc-lista'>{' '.join(partes_map)}</div>", unsafe_allow_html=True)
-        if sem_descricao_map:
-            st.caption(f"⚠️ {traduzir('Sem descrição cadastrada para:')} {', '.join(sem_descricao_map)}")
-
-    if not selecionados_map:
-        st.info(traduzir("Nenhuma planilha de rememoração selecionada."))
+    if 'df_iniciativas' not in locals() or df_iniciativas.empty:
+        st.info(traduzir("Nenhuma iniciativa carregada. Selecione planilhas de MAPEAMENTOS."))
     else:
-        df_iniciativas = carregar_iniciativas(selecionados_map, pasta_acervo)
-        
-        st.subheader(traduzir("Busca avançada"))
-        termo_inic = st.text_input(
-            traduzir("Busca avançada por termo (ex: podcast, exposição, filme)"), key="busca_inic"
-        )
-        
+        termo_inic = st.text_input(traduzir("Pesquisar nas iniciativas..."), key="busca_inic")
         df_inic_filtrado = df_iniciativas.copy()
         
-        if termo_inic and not df_inic_filtrado.empty:
-            stemmer = get_stemmer()
-            termo_normal = normalizar_texto(termo_inic, stemmer)
-            termo_stem = " ".join([stemmer.stem(p) for p in termo_normal.split()])
-
-            df_inic_filtrado["NORMAL_BUSCA"] = df_inic_filtrado.apply(
-                lambda row: normalizar_texto(" ".join(row.dropna().astype(str)), stemmer),
-                axis=1,
-            )
-            padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
-            mask_inic = df_inic_filtrado["NORMAL_BUSCA"].str.contains(padrao, regex=True, na=False)
-            df_inic_filtrado = df_inic_filtrado[mask_inic].drop(columns=["NORMAL_BUSCA"])
-
-        st.subheader(traduzir("Filtros categoriais"))
-        cols_inic = ["Nome da iniciativa", "Intervenção", "Abrangência", "Modalidade"]
-        cols_exist_inic = [c for c in cols_inic if c in df_inic_filtrado.columns]
-
-        filtros_sel_inic = {}
-        if cols_exist_inic and not df_inic_filtrado.empty:
-            l_cols_inic = st.columns(len(cols_exist_inic))
-            for i, col in enumerate(cols_exist_inic):
-                with l_cols_inic[i]:
-                    valores = [v for v in df_inic_filtrado[col].dropna().unique() if str(v).strip() != ""]
-                    filtros_sel_inic[col] = st.multiselect(traduzir(col), sorted(valores), key=f"f_inic_{col}")
-
-        for col, sel in filtros_sel_inic.items():
-            if sel:
-                df_inic_filtrado = df_inic_filtrado[df_inic_filtrado[col].isin(sel)]
-
-        st.subheader(traduzir("Indicadores"))
+        if termo_inic:
+            mask_inic = df_inic_filtrado.astype(str).apply(
+                lambda x: x.str.contains(termo_inic, case=False, na=False)
+            ).any(axis=1)
+            df_inic_filtrado = df_inic_filtrado[mask_inic]
+            
         st.metric(traduzir("Total de iniciativas mapeadas"), len(df_inic_filtrado))
-
-        st.subheader(traduzir("Análises e visualizações do acervo"))
-        opcao_limpar_inic = traduzir("Nenhuma visualização (limpar tela)")
-        opcao_timeline_inic = traduzir("Linha do tempo")
-        opcao_nuvem_inic = traduzir("Nuvem de palavras")
-
-        vis_inic = st.selectbox(
-            traduzir("Escolha uma visualização ou eixo temático:"),
-            [opcao_limpar_inic, opcao_timeline_inic, opcao_nuvem_inic],
-            index=1,
-            key="vis_inic"
-        )
         
-        if vis_inic == opcao_timeline_inic and not df_inic_filtrado.empty:
-            if "Ano" in df_inic_filtrado.columns:
-                df_inic_datas = df_inic_filtrado.copy()
-                df_inic_datas["Ano_Limpo"] = df_inic_datas["Ano"].astype(str).str.extract(r"((?:19|20)\d{2})")
-                df_inic_anos = df_inic_datas.dropna(subset=["Ano_Limpo"])
-                
-                if not df_inic_anos.empty:
-                    contagem_anos_inic = df_inic_anos["Ano_Limpo"].value_counts().reset_index()
-                    contagem_anos_inic.columns = ["Ano", "Frequência"]
-                    fig_linha_inic = px.line(
-                        contagem_anos_inic.sort_values(by="Ano"), 
-                        x="Ano", y="Frequência", markers=True, color_discrete_sequence=["#7BC6CC"]
-                    )
-                    fig_linha_inic.update_layout(
-                        template="plotly_dark", font=dict(family="Source Serif 4, serif", size=15),
-                        title=dict(text=traduzir("Linha do tempo"), font=dict(family="Cormorant Garamond, serif", size=24)), 
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(title="", showgrid=False), 
-                        yaxis=dict(title=traduzir("Volume documental"), gridcolor="rgba(120,120,120,0.15)")
-                    )
-                    fig_linha_inic.update_traces(line=dict(width=3), marker=dict(size=8))
-                    st.plotly_chart(fig_linha_inic, use_container_width=True)
-
-        elif vis_inic == opcao_nuvem_inic and not df_inic_filtrado.empty:
-            if "Título" in df_inic_filtrado.columns:
-                textos_lista_inic = df_inic_filtrado["Título"].dropna().astype(str).tolist()
-                texto_completo_inic = " ".join(textos_lista_inic).strip()
-                
-                stopwords = set(["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso", "ela", "entre", "depois", "sem", "mesmo", "aos", "seus", "quem", "nas", "me", "esse", "eles", "você", "essa", "num", "nem", "suas", "meu", "às", "minha", "numa", "pelos", "elas", "qual", "nós", "lhe", "deles", "essas", "esses", "pelas", "este", "dele", "tu", "te", "vocês", "vos", "lhes", "meus", "minhas", "teu", "tua", "teus", "tuas", "nosso", "nossa", "nossos", "nossas", "nan", "título", "localizado"])
-                
-                try:
-                    wordcloud_inic = WordCloud(width=800, height=400, background_color="rgba(0,0,0,0)", mode="RGBA", colormap="viridis", stopwords=stopwords, max_words=100).generate(texto_completo_inic)
-                    fig_inic, ax_inic = plt.subplots(figsize=(10, 5))
-                    ax_inic.imshow(wordcloud_inic, interpolation="bilinear")
-                    ax_inic.axis("off")
-                    fig_inic.patch.set_alpha(0)
-                    st.pyplot(fig_inic)
-                except ValueError:
-                    st.warning(traduzir("Não há vocabulário útil suficiente nos itens filtrados para gerar a nuvem de palavras. Tente remover alguns filtros."))
+        if "Ano" in df_inic_filtrado.columns:
+            df_inic_datas = df_inic_filtrado.copy()
+            df_inic_datas["Ano_Limpo"] = df_inic_datas["Ano"].astype(str).str.extract(r"((?:19|20)\d{2})")
+            df_inic_anos = df_inic_datas.dropna(subset=["Ano_Limpo"])
+            
+            if not df_inic_anos.empty:
+                contagem_anos_inic = df_inic_anos["Ano_Limpo"].value_counts().reset_index()
+                contagem_anos_inic.columns = ["Ano", "Frequência"]
+                fig_linha_inic = px.line(
+                    contagem_anos_inic.sort_values(by="Ano"), 
+                    x="Ano", 
+                    y="Frequência", 
+                    markers=True, 
+                    color_discrete_sequence=["#7BC6CC"]
+                )
+                fig_linha_inic.update_layout(
+                    template="plotly_dark", 
+                    font=dict(family="Source Serif 4, serif", size=15),
+                    title=dict(
+                        text=traduzir("Linha do Tempo das Iniciativas"), 
+                        font=dict(family="Cormorant Garamond, serif", size=24)
+                    ), 
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)", 
+                    xaxis=dict(title="", showgrid=False), 
+                    yaxis=dict(title=traduzir("Volume documental"), gridcolor="rgba(120,120,120,0.15)")
+                )
+                fig_linha_inic.update_traces(line=dict(width=3), marker=dict(size=8))
+                st.plotly_chart(fig_linha_inic, use_container_width=True)
 
         st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
 
