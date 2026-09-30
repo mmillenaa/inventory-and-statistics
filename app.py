@@ -15,6 +15,16 @@ from bs4 import BeautifulSoup
 from nltk.stem import RSLPStemmer
 from wordcloud import WordCloud
 
+from vocabulario_controlado import (
+    DICT_ESPECIE,
+    DICT_FORMA,
+    DICT_GENERO,
+    DICT_TECNICA,
+    descrever_sigla,
+    rotular_sigla,
+    rotulo_curto_sigla,
+)
+
 
 # ============================================================
 # RECURSOS CACHEADOS E FUNÇÕES UTILITÁRIAS
@@ -1185,21 +1195,15 @@ with aba_inventario:
     ]
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
-    dicionario_siglas = {
-        "FOT": traduzir("Fotografia (FOT)"),
-        "PLN": traduzir("Planta cartográfica (PLN)"),
-        "DGZ": traduzir("Digitalizado (DGZ)"),
-        "ICO": traduzir("Iconográfico (ICO)"),
-        "MTO": traduzir("Meio magnético/ótico (MTO)"),
-        "TXT": traduzir("Textual (TXT)"),
-        "AVS": traduzir("Audiovisual (AVS)"),
-        "FLG": traduzir("Filmográfico (FLG)"),
-        "FME": traduzir("Filme (FME)"),
-        "NOT": traduzir("Notícia (NOT)"),
-        "REL": traduzir("Relatório (REL)"),
-        "NDG": traduzir("Nato-digital (NDG)"),
-        "NDT": traduzir("Não determinado (NDT)"),
+    TIPOS_SIGLA = {
+        "Gênero documental": "genero",
+        "Espécie/Tipo documental": "especie",
+        "Técnica de registro": "tecnica",
+        "Forma documental": "forma",
     }
+
+    def _rotular(valor, coluna=None):
+        return rotulo_curto_sigla(valor, tipo=TIPOS_SIGLA.get(coluna))
 
     filtros_selecionados = {}
     if cols_exist and not df_filtrado.empty:
@@ -1561,6 +1565,55 @@ with aba_iniciativas:
         ARQUIVO_PENHA = (
             "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx"
         )
+        ARQUIVO_CARANDIRU = (
+            "BR-SPCARANDIRU_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx"
+        )
+        INDIVIDUAIS_CARANDIRU = {
+            "Rememoração",
+            "Manifestação artístico-cultural",
+            "Produção midiática",
+        }
+        OPCAO_TODAS_CARANDIRU = "Rememorações todas (Carandiru)"
+        SUFIXO_PENHA = " (Massacre da Penha)"
+
+        def _mascara_intervencao(serie_valor, serie_arquivo, selecionados):
+            mask = pd.Series(False, index=serie_valor.index)
+            for v in selecionados:
+                if v == OPCAO_TODAS_CARANDIRU:
+                    # "Todas" = todas as linhas do Carandiru,
+                    # independentemente de terem Intervenção preenchida.
+                    sub = serie_arquivo == ARQUIVO_CARANDIRU
+                elif v.endswith(SUFIXO_PENHA):
+                    base = v[: -len(SUFIXO_PENHA)]
+                    sub = (
+                        (serie_valor == base)
+                        & (serie_arquivo == ARQUIVO_PENHA)
+                    )
+                else:
+                    sub = serie_valor == v
+                mask |= sub
+            return mask
+
+        def _on_change_intervencao():
+            key = "fi_Intervenção"
+            atual = list(st.session_state.get(key, []) or [])
+            anterior = list(st.session_state.get(f"{key}__prev", []) or [])
+            adicionadas = [v for v in atual if v not in anterior]
+
+            if OPCAO_TODAS_CARANDIRU in adicionadas:
+                atual = [v for v in atual if v not in INDIVIDUAIS_CARANDIRU]
+            elif any(v in INDIVIDUAIS_CARANDIRU for v in adicionadas):
+                atual = [v for v in atual if v != OPCAO_TODAS_CARANDIRU]
+
+            st.session_state[key] = atual
+            st.session_state[f"{key}__prev"] = list(atual)
+
+        origens_presentes = (
+            set(df_iniciativas["Arquivo_origem"].dropna().unique())
+            if "Arquivo_origem" in df_iniciativas.columns
+            else set()
+        )
+        apenas_carandiru = origens_presentes == {ARQUIVO_CARANDIRU}
 
         filtros_sel_inic = {}
         if cols_exist_inic and not df_inic_filtrado.empty:
@@ -1574,49 +1627,122 @@ with aba_iniciativas:
                     df_opcoes_inic = df_iniciativas.copy()
                     for o_col, sel_vals in selecoes_ativas_inic.items():
                         if o_col != col and sel_vals:
-                            df_opcoes_inic = df_opcoes_inic[
-                                df_opcoes_inic[o_col].isin(sel_vals)
-                            ]
-                    valores_inic = sorted(
-                        [
-                            str(v).strip()
-                            for v in df_opcoes_inic[col].dropna().unique()
-                            if str(v).strip() and "Unnamed" not in str(v)
-                        ],
-                        key=chave_ordenacao_alfabetica,
-                    )
-
-                    # Marca as opções que só aparecem na planilha da Penha
-                    mapa_lbl = {}
-                    if 'Arquivo_origem' in df_iniciativas.columns:
-                        for v in valores_inic:
-                            ors = df_iniciativas.loc[
-                                df_iniciativas[col].astype(str).str.strip() == v,
-                                'Arquivo_origem',
-                            ].dropna().unique()
-                            if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
-                                mapa_lbl[v] = f"{v} (Massacre da Penha)"
+                            if o_col == "Intervenção":
+                                m = _mascara_intervencao(
+                                    df_opcoes_inic["Intervenção"],
+                                    df_opcoes_inic["Arquivo_origem"],
+                                    sel_vals,
+                                )
+                                df_opcoes_inic = df_opcoes_inic[m]
                             else:
-                                mapa_lbl[v] = v
+                                df_opcoes_inic = df_opcoes_inic[
+                                    df_opcoes_inic[o_col].isin(sel_vals)
+                                ]
 
-                    ajuda = (
-                        "O campo Modalidade é apenas o detalhamento do campo "
-                        '"Abrangência".'
-                        if col == "Modalidade"
-                        else None
-                    )
+                    if col == "Intervenção":
+                        pares = (
+                            df_opcoes_inic[["Intervenção", "Arquivo_origem"]]
+                            .dropna()
+                            .drop_duplicates()
+                        )
+                        valores_inic = []
+                        vistos = set()
+                        for val, arq in pares.itertuples(index=False):
+                            val = str(val).strip()
+                            arq = str(arq).strip()
+                            if not val:
+                                continue
+                            lbl = (
+                                f"{val}{SUFIXO_PENHA}"
+                                if arq == ARQUIVO_PENHA
+                                else val
+                            )
+                            if lbl in vistos:
+                                continue
+                            vistos.add(lbl)
+                            valores_inic.append(lbl)
 
-                    filtros_sel_inic[col] = st.multiselect(
-                        traduzir(col),
-                        valores_inic,
-                        key=f"fi_{col}",
-                        format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
-                        help=ajuda,
-                    )
+                        valores_inic = sorted(
+                            valores_inic, key=chave_ordenacao_alfabetica
+                        )
 
-                    
+                        if ARQUIVO_CARANDIRU in origens_presentes:
+                            valores_inic = [
+                                v for v in valores_inic
+                                if v != OPCAO_TODAS_CARANDIRU
+                            ]
+                            valores_inic.insert(0, OPCAO_TODAS_CARANDIRU)
+
+                        default_col = (
+                            [OPCAO_TODAS_CARANDIRU]
+                            if apenas_carandiru
+                            else []
+                        )
+
+                        if "fi_Intervenção__prev" not in st.session_state:
+                            st.session_state["fi_Intervenção__prev"] = list(
+                                default_col
+                            )
+
+                        filtros_sel_inic[col] = st.multiselect(
+                            traduzir(col),
+                            valores_inic,
+                            default=default_col,
+                            key=f"fi_{col}",
+                            help=None,
+                            on_change=_on_change_intervencao,
+                        )
+                    else:
+                        valores_inic = sorted(
+                            [
+                                str(v).strip()
+                                for v in df_opcoes_inic[col].dropna().unique()
+                                if str(v).strip()
+                                and "Unnamed" not in str(v)
+                            ],
+                            key=chave_ordenacao_alfabetica,
+                        )
+
+                        mapa_lbl = {}
+                        if "Arquivo_origem" in df_iniciativas.columns:
+                            for v in valores_inic:
+                                ors = df_iniciativas.loc[
+                                    df_iniciativas[col]
+                                    .astype(str).str.strip()
+                                    == v,
+                                    "Arquivo_origem",
+                                ].dropna().unique()
+                                if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
+                                    mapa_lbl[v] = f"{v}{SUFIXO_PENHA}"
+                                else:
+                                    mapa_lbl[v] = v
+
+                        ajuda = (
+                            "Este campo é apenas o detalhamento do campo "
+                            '"Abrangência".'
+                            if col == "Modalidade"
+                            else None
+                        )
+
+                        filtros_sel_inic[col] = st.multiselect(
+                            traduzir(col),
+                            valores_inic,
+                            key=f"fi_{col}",
+                            format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
+                            help=ajuda,
+                        )
+
         for col, sel in filtros_sel_inic.items():
-            if sel:
+            if not sel:
+                continue
+            if col == "Intervenção":
+                m = _mascara_intervencao(
+                    df_inic_filtrado["Intervenção"],
+                    df_inic_filtrado["Arquivo_origem"],
+                    sel,
+                )
+                df_inic_filtrado = df_inic_filtrado[m]
+            else:
                 df_inic_filtrado = df_inic_filtrado[
                     df_inic_filtrado[col].isin(sel)
                 ]
@@ -1715,13 +1841,6 @@ with aba_iniciativas:
                     )
                 )
             else:
-                textos_inic = []
-                for c in cols_escolhidas:
-                    textos_inic += (
-                        df_inic_filtrado[c].dropna().astype(str).tolist()
-                    )
-                texto_completo_inic = " ".join(textos_inic).strip()
-
                 stopwords_i = set(
                     [
                         "de", "a", "o", "que", "e", "do", "da", "em", "um",
@@ -1739,22 +1858,39 @@ with aba_iniciativas:
                         "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
                     ]
                 )
-                try:
-                    wc_inic = WordCloud(
-                        width=800,
-                        height=400,
-                        background_color="rgba(0,0,0,0)",
-                        mode="RGBA",
-                        colormap="viridis",
-                        stopwords=stopwords_i,
-                        max_words=100,
-                    ).generate(texto_completo_inic)
-                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
-                    ax_i.imshow(wc_inic, interpolation="bilinear")
-                    ax_i.axis("off")
-                    fig_i.patch.set_alpha(0)
-                    st.pyplot(fig_i)
-                except ValueError:
+
+                contador = Counter()
+                for c in cols_escolhidas:
+                    for texto in df_inic_filtrado[c].dropna().astype(str):
+                        s = texto.strip()
+                        if not s or s.lower() in (
+                            "nan", "none", "null", "na", "n/a"
+                        ):
+                            continue
+                        # O limite de um termo é a vírgula (não o espaço)
+                        partes = re.split(r"[,;\n\r]+", s)
+                        for parte in partes:
+                            frase = re.sub(r"\s+", " ", parte).strip(" .-")
+                            if not frase:
+                                continue
+                            if frase.lower() in (
+                                "nan", "none", "null", "na", "n/a"
+                            ):
+                                continue
+                            # Descarta frases onde TODAS as palavras são
+                            # stopwords
+                            palavras = [p for p in frase.split() if p]
+                            uteis = [
+                                p for p in palavras
+                                if p.strip(".,;:!?()[]\"'").lower()
+                                not in stopwords_i
+                            ]
+                            if not uteis:
+                                continue
+                            # Anos e números também contam como termo útil
+                            contador[frase] += 1
+
+                if not contador:
                     st.warning(
                         traduzir(
                             "Não há vocabulário útil suficiente nos itens "
@@ -1762,8 +1898,21 @@ with aba_iniciativas:
                             "remover alguns filtros."
                         )
                     )
-
-        st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
+                else:
+                    wc_inic = WordCloud(
+                        width=800,
+                        height=400,
+                        background_color="rgba(0,0,0,0)",
+                        mode="RGBA",
+                        colormap="viridis",
+                        max_words=100,
+                        collocations=False,
+                    ).generate_from_frequencies(dict(contador))
+                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                    ax_i.imshow(wc_inic, interpolation="bilinear")
+                    ax_i.axis("off")
+                    fig_i.patch.set_alpha(0)
+                    st.pyplot(fig_i)
 
 # ============================================================
 # ABA 3: VISÃO GERAL DO ACERVO
