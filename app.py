@@ -423,9 +423,9 @@ def traduzir(texto_pt):
             "Español": "Técnica de registro",
         },
         "Arquivo_origem": {"English": "Source file", "Español": "Archivo de origen"},
-        "Sem descrição cadastrada para:": {
-            "English": "No description registered for:",
-            "Español": "Sin descripción registrada para:",
+        "Forma documental": {
+            "English": "Documentary form",
+            "Español": "Forma documental",
         },
                 "Rememorações e Notícias": {
             "English": "Remembrances and News",
@@ -599,6 +599,69 @@ st.markdown(css_base, unsafe_allow_html=True)
 # ============================================================
 # FUNÇÕES DE EXTRAÇÃO, CACHE E WEBSCRAPING
 # ============================================================
+def _ler_aba_geral(xls):
+    """Lê a aba 'Geral' de um ExcelFile já aberto.
+
+    Layout assumido:
+      - Linha 1: cabeçalho
+      - Dados a partir da linha 2
+      - Coluna K (idx 10): Gênero documental
+      - Coluna M (idx 12): Espécie/Tipo documental
+      - Coluna O (idx 14): Técnica de registro
+      - Coluna Q (idx 16): Forma documental
+
+    Devolve DataFrame com as 4 colunas de classificação + '_codigo'
+    (Código de referência). Se a aba não existir, devolve DataFrame vazio.
+    """
+    aba_geral = None
+    for s in xls.sheet_names:
+        if norm_col(s) == "geral":
+            aba_geral = s
+            break
+    if aba_geral is None:
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_excel(xls, sheet_name=aba_geral, header=0)
+    except Exception:
+        return pd.DataFrame()
+
+    if df.empty or len(df.columns) < 17:
+        return pd.DataFrame()
+
+    cols = list(df.columns)
+    c_gen = cols[10]  # K
+    c_esp = cols[12]  # M
+    c_tec = cols[14]  # O
+    c_for = cols[16]  # Q
+
+    # Localiza Código de referência pelo nome do cabeçalho
+    c_cod = None
+    for c in cols:
+        cn = norm_col(str(c))
+        if "codigo" in cn or "referencia" in cn:
+            c_cod = c
+            break
+
+    def _limpa(v):
+        try:
+            if pd.isna(v):
+                return ""
+        except (TypeError, ValueError):
+            pass
+        s = str(v).strip()
+        return "" if s.lower() in ("nan", "none", "null", "n/a", "") else s
+
+    out = pd.DataFrame({
+        "Gênero documental": df[c_gen].map(_limpa),
+        "Espécie/Tipo documental": df[c_esp].map(_limpa),
+        "Técnica de registro": df[c_tec].map(_limpa),
+        "Forma documental": df[c_for].map(_limpa),
+    })
+    out["_codigo"] = df[c_cod].map(_limpa) if c_cod is not None else ""
+    return out
+
+
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
     """
@@ -618,10 +681,25 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
             continue
 
         xls = pd.ExcelFile(caminho)
-        
+
+        # Lê a aba "Geral" deste arquivo (fonte de classificação)
+        df_geral_arq = _ler_aba_geral(xls)
+        mapa_classif = {}
+        if not df_geral_arq.empty:
+            for _, g in df_geral_arq.iterrows():
+                cod = str(g.get("_codigo", "")).strip()
+                if not cod or cod.lower() in ("nan", "none", ""):
+                    continue
+                mapa_classif[cod] = {
+                    "Gênero documental": g["Gênero documental"],
+                    "Espécie/Tipo documental": g["Espécie/Tipo documental"],
+                    "Técnica de registro": g["Técnica de registro"],
+                    "Forma documental": g["Forma documental"],
+                }
+
         for aba in xls.sheet_names:
             aba_norm = norm_col(aba)
-            abas_ignoradas = ['classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
+            abas_ignoradas = ['geral', 'classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
             if aba_norm in abas_ignoradas:
                 continue
 
@@ -663,66 +741,30 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                 c_cod = get_col('codigo de referencia', 'codigo')
                 c_kw  = get_col('palavras', 'palavra-chave')
                 c_not = get_col('notas', 'observacao', 'condicoes')
-                c_gen = get_col('genero')
-                c_esp = get_col('especie', 'tipo doc')
-                c_tec = get_col('tecnica')
-                
                 for _, r in df.iterrows():
                     t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
                     if not t or t.lower() in ('nan', 'none'):
                         continue
-                        
+
+                    cod_ref = (
+                        str(r[c_cod]).strip()
+                        if c_cod and pd.notna(r[c_cod]) else ''
+                    )
+                    classif = mapa_classif.get(cod_ref, {})
+
                     linhas_catalogacao.append({
                         'Arquivo_origem': nome_arq,
                         'Aba_origem': aba,
                         'Título (Busca)': t,
                         'Conteúdo (Busca)': str(r[c_con]).strip() if c_con and pd.notna(r[c_con]) else '',
                         'Data (Busca)': str(r[c_dat]).strip() if c_dat and pd.notna(r[c_dat]) else '',
-                        'Código de referência': str(r[c_cod]).strip() if c_cod and pd.notna(r[c_cod]) else '',
+                        'Código de referência': cod_ref,
                         'Palavras-chave': str(r[c_kw]).strip() if c_kw and pd.notna(r[c_kw]) else '',
                         'Notas (Busca)': str(r[c_not]).strip() if c_not and pd.notna(r[c_not]) else '',
-                        'Gênero documental': str(r[c_gen]).strip() if c_gen and pd.notna(r[c_gen]) else '',
-                        'Espécie/Tipo documental': str(r[c_esp]).strip() if c_esp and pd.notna(r[c_esp]) else '',
-                        'Técnica de registro': str(r[c_tec]).strip() if c_tec and pd.notna(r[c_tec]) else '',
-                    })
-            
-            elif tipo_aba == 'iniciativas':
-                c_tit = get_col('nome da iniciativa', 'titulo', 'iniciativa')
-                c_int = get_col('intervencao', 'finalidade')
-                c_abr = get_col('abrangencia')
-                c_mod = get_col('modalidade')
-                c_ano = get_col('ano', 'data')
-                c_prop = get_col('proponente')
-                c_link = get_col('link', 'fonte')
-
-                def _limpa_interv(v):
-                    """Ignora NA/vazio/None/'nan' etc. na coluna Intervenção."""
-                    try:
-                        if pd.isna(v):
-                            return ''
-                    except (TypeError, ValueError):
-                        pass
-                    s = str(v).strip()
-                    if s.lower() in (
-                        '', 'na', 'n/a', 'nan', 'none', 'null', '-', '--'
-                    ):
-                        return ''
-                    return s
-
-                for _, r in df.iterrows():
-                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
-                    if not t or t.lower() in ('nan', 'none'):
-                        continue
-
-                    linhas_iniciativas.append({
-                        'Arquivo_origem': nome_arq,
-                        'Nome da iniciativa': t,
-                        'Intervenção': _limpa_interv(r[c_int]) if c_int else '',
-                        'Abrangência': str(r[c_abr]).strip() if c_abr and pd.notna(r[c_abr]) else '',
-                        'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
-                        'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
-                        'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
-                        'Fonte / Origem': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
+                        'Gênero documental': classif.get("Gênero documental", ""),
+                        'Espécie/Tipo documental': classif.get("Espécie/Tipo documental", ""),
+                        'Técnica de registro': classif.get("Técnica de registro", ""),
+                        'Forma documental': classif.get("Forma documental", ""),
                     })
 
     df_cat = pd.DataFrame(linhas_catalogacao)
@@ -758,7 +800,8 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         df_cat = pd.DataFrame(columns=[
             'Arquivo_origem', 'Aba_origem', 'Título (Busca)', 'Conteúdo (Busca)', 
             'Data (Busca)', 'Código de referência', 'Palavras-chave', 'Notas (Busca)', 
-            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro'
+            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro',
+            'Forma documental'
         ])
         
     return df_cat, df_inic
@@ -1191,7 +1234,7 @@ with aba_inventario:
         "Gênero documental",
         "Espécie/Tipo documental",
         "Técnica de registro",
-        "Arquivo_origem",
+        "Forma documental",
     ]
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
