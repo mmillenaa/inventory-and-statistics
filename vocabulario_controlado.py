@@ -4,6 +4,7 @@ Vocabulário controlado do GPDVE.
 Dicionários de Gênero, Espécie, Técnica e Forma documental.
 Chaves = siglas; valores = descrição completa.
 """
+import re
 
 DICT_GENERO = {
     "ATT": "Desenho técnico arquitetônico, de engenharia ou de construção (plantas, cortes, elevações).",
@@ -337,3 +338,28 @@ def rotular_sigla(sigla, tipo=None, mostrar_descricao=True):
     # Corta na primeira frase para não poluir o menu
     resumo = desc.split(":")[0].split(".")[0].strip()
     return f"{s} — {resumo}"
+
+def rotulo_curto_sigla(sigla, tipo=None):
+    """Retorna apenas o rótulo curto da sigla, sem sigla e sem parênteses.
+
+    Exemplos:
+        FOT (especie)  -> "Fotografia"
+        TXT (genero)   -> "Textual"
+        VAR (tecnica)  -> "Técnica variada"
+        MT0 (forma)    -> "Arquivo de alta resolução gerado por operação
+                           direta no equipamento"
+    Se a sigla não existir no vocabulário, devolve a própria sigla.
+    """
+    if not sigla:
+        return ""
+    s = str(sigla).strip()
+    desc = descrever_sigla(s, tipo=tipo)
+    if not desc:
+        return s
+    # Corta no primeiro ":" (rótulo antes da explicação)
+    rotulo = desc.split(":", 1)[0].strip()
+    # Remove parênteses do tipo "(abrangente)", "(sem especificação)"
+    rotulo = re.sub(r"\s*\([^)]*\)\s*", " ", rotulo).strip()
+    # Colapsa espaços duplos
+    rotulo = re.sub(r"\s+", " ", rotulo).strip()
+    return rotulo or s
