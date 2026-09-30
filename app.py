@@ -1754,10 +1754,11 @@ html_arvore = """
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
-</details>
+<details>
 <summary>Subsérie: Notícias do Massacre do Carandiru (2002)</summary>
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-NOTDEMOLI-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
 </details>
 
 
