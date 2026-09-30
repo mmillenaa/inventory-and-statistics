@@ -708,7 +708,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
         for aba in xls.sheet_names:
             aba_norm = norm_col(aba)
-            abas_ignoradas = ['geral', 'classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
+            abas_ignoradas = ['classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
             if aba_norm in abas_ignoradas:
                 continue
 
@@ -735,9 +735,16 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
             cols_norm = {c: norm_col(c) for c in df.columns}
             
             def get_col(*frags):
-                for c in df.columns:
-                    if any(f in cols_norm[c] for f in frags):
-                        return c
+                # 1) match exato primeiro (evita "Anotação" casar com "ano")
+                for f in frags:
+                    for c in df.columns:
+                        if cols_norm[c] == f:
+                            return c
+                # 2) match por substring como fallback
+                for f in frags:
+                    for c in df.columns:
+                        if f in cols_norm[c]:
+                            return c
                 return None
 
             if tipo_aba == 'catalogacao':
@@ -1572,8 +1579,27 @@ with aba_iniciativas:
         if not sel_inic:
             st.stop()
 
-        _, df_iniciativas = carregar_e_cruzar_dados(sel_inic, pasta_acervo_inic)
+        # Se a seleção de planilhas mudou, limpa os filtros anteriores.
+        # Sem isso, um filtro antigo (ex.: "Rememorações todas (Carandiru)")
+        # fica preso no estado e zera os resultados ao trocar de arquivos.
+        sel_sig = tuple(sorted(sel_inic))
+        if st.session_state.get("_inic_sel_sig") != sel_sig:
+            for k in (
+                "fi_Nome da iniciativa",
+                "fi_Intervenção",
+                "fi_Abrangência",
+                "fi_Modalidade",
+                "fi_Nome da iniciativa__prev",
+                "fi_Intervenção__prev",
+                "fi_Abrangência__prev",
+                "fi_Modalidade__prev",
+                "cols_nuvem_inic",
+            ):
+                st.session_state.pop(k, None)
+            st.session_state["_inic_sel_sig"] = sel_sig
 
+        _, df_iniciativas = carregar_e_cruzar_dados(sel_inic, pasta_acervo_inic)
+        
         # -------- Busca avançada --------
         st.subheader(traduzir("Busca avançada"))
         termo_inic = st.text_input(
