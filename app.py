@@ -440,7 +440,7 @@ def traduzir(texto_pt):
         "Intervenção": {"English": "Intervention", "Español": "Intervención"},
         "Ano": {"English": "Year", "Español": "Año"},
         "Proponente": {"English": "Proponent", "Español": "Proponente"},
-        "Link / Fonte": {"English": "Link / Source", "Español": "Enlace / Fuente"},
+        "Fonte / Origem": {"English": "Source / Origin", "Español": "Fuente / Origen"},
         "Pesquisar termo nas iniciativas (ex: podcast, exposição, filme)": {
             "English": "Search term in initiatives (e.g., podcast, exhibition, film)",
             "Español": "Buscar término en iniciativas (ej: podcast, exposición, película)",
@@ -722,7 +722,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                         'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
                         'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
                         'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
-                        'Link / Fonte': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
+                        'Fonte / Origem': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
                     })
 
     df_cat = pd.DataFrame(linhas_catalogacao)
@@ -1816,7 +1816,7 @@ with aba_iniciativas:
                     "Nome da iniciativa",
                     "Ano",
                     "Proponente",
-                    "Link / Fonte",
+                    "Fonte / Origem",
                     "Intervenção",
                     "Abrangência",
                     "Modalidade",
