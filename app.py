@@ -1561,56 +1561,6 @@ with aba_iniciativas:
         ARQUIVO_PENHA = (
             "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx"
         )
-        ARQUIVO_CARANDIRU = (
-            "BR-SPCARANDIRU_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx"
-        )
-        INDIVIDUAIS_CARANDIRU = {
-            "Rememoração",
-            "Manifestação artístico-cultural",
-            "Produção midiática",
-        }
-        OPCAO_TODAS_CARANDIRU = "Rememorações todas (Carandiru)"
-        SUFIXO_PENHA = " (Massacre da Penha)"
-
-        def _mascara_intervencao(serie_valor, serie_arquivo, selecionados):
-            mask = pd.Series(False, index=serie_valor.index)
-            for v in selecionados:
-                if v == OPCAO_TODAS_CARANDIRU:
-                    sub = (
-                        serie_valor.isin(INDIVIDUAIS_CARANDIRU)
-                        & (serie_arquivo == ARQUIVO_CARANDIRU)
-                    )
-                elif v.endswith(SUFIXO_PENHA):
-                    base = v[: -len(SUFIXO_PENHA)]
-                    sub = (
-                        (serie_valor == base)
-                        & (serie_arquivo == ARQUIVO_PENHA)
-                    )
-                else:
-                    sub = serie_valor == v
-                mask |= sub
-            return mask
-
-        def _on_change_intervencao():
-            key = "fi_Intervenção"
-            atual = list(st.session_state.get(key, []) or [])
-            anterior = list(st.session_state.get(f"{key}__prev", []) or [])
-            adicionadas = [v for v in atual if v not in anterior]
-
-            if OPCAO_TODAS_CARANDIRU in adicionadas:
-                atual = [v for v in atual if v not in INDIVIDUAIS_CARANDIRU]
-            elif any(v in INDIVIDUAIS_CARANDIRU for v in adicionadas):
-                atual = [v for v in atual if v != OPCAO_TODAS_CARANDIRU]
-
-            st.session_state[key] = atual
-            st.session_state[f"{key}__prev"] = list(atual)
-
-        origens_presentes = (
-            set(df_iniciativas["Arquivo_origem"].dropna().unique())
-            if "Arquivo_origem" in df_iniciativas.columns
-            else set()
-        )
-        apenas_carandiru = origens_presentes == {ARQUIVO_CARANDIRU}
 
         filtros_sel_inic = {}
         if cols_exist_inic and not df_inic_filtrado.empty:
@@ -1624,122 +1574,49 @@ with aba_iniciativas:
                     df_opcoes_inic = df_iniciativas.copy()
                     for o_col, sel_vals in selecoes_ativas_inic.items():
                         if o_col != col and sel_vals:
-                            if o_col == "Intervenção":
-                                m = _mascara_intervencao(
-                                    df_opcoes_inic["Intervenção"],
-                                    df_opcoes_inic["Arquivo_origem"],
-                                    sel_vals,
-                                )
-                                df_opcoes_inic = df_opcoes_inic[m]
-                            else:
-                                df_opcoes_inic = df_opcoes_inic[
-                                    df_opcoes_inic[o_col].isin(sel_vals)
-                                ]
-
-                    if col == "Intervenção":
-                        pares = (
-                            df_opcoes_inic[["Intervenção", "Arquivo_origem"]]
-                            .dropna()
-                            .drop_duplicates()
-                        )
-                        valores_inic = []
-                        vistos = set()
-                        for val, arq in pares.itertuples(index=False):
-                            val = str(val).strip()
-                            arq = str(arq).strip()
-                            if not val:
-                                continue
-                            lbl = (
-                                f"{val}{SUFIXO_PENHA}"
-                                if arq == ARQUIVO_PENHA
-                                else val
-                            )
-                            if lbl in vistos:
-                                continue
-                            vistos.add(lbl)
-                            valores_inic.append(lbl)
-
-                        valores_inic = sorted(
-                            valores_inic, key=chave_ordenacao_alfabetica
-                        )
-
-                        if ARQUIVO_CARANDIRU in origens_presentes:
-                            valores_inic = [
-                                v for v in valores_inic
-                                if v != OPCAO_TODAS_CARANDIRU
+                            df_opcoes_inic = df_opcoes_inic[
+                                df_opcoes_inic[o_col].isin(sel_vals)
                             ]
-                            valores_inic.insert(0, OPCAO_TODAS_CARANDIRU)
+                    valores_inic = sorted(
+                        [
+                            str(v).strip()
+                            for v in df_opcoes_inic[col].dropna().unique()
+                            if str(v).strip() and "Unnamed" not in str(v)
+                        ],
+                        key=chave_ordenacao_alfabetica,
+                    )
 
-                        default_col = (
-                            [OPCAO_TODAS_CARANDIRU]
-                            if apenas_carandiru
-                            else []
-                        )
+                    # Marca as opções que só aparecem na planilha da Penha
+                    mapa_lbl = {}
+                    if 'Arquivo_origem' in df_iniciativas.columns:
+                        for v in valores_inic:
+                            ors = df_iniciativas.loc[
+                                df_iniciativas[col].astype(str).str.strip() == v,
+                                'Arquivo_origem',
+                            ].dropna().unique()
+                            if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
+                                mapa_lbl[v] = f"{v} (Massacre da Penha)"
+                            else:
+                                mapa_lbl[v] = v
 
-                        if "fi_Intervenção__prev" not in st.session_state:
-                            st.session_state["fi_Intervenção__prev"] = list(
-                                default_col
-                            )
+                    ajuda = (
+                        "O campo Modalidade é apenas o detalhamento do campo "
+                        '"Abrangência".'
+                        if col == "Modalidade"
+                        else None
+                    )
 
-                        filtros_sel_inic[col] = st.multiselect(
-                            traduzir(col),
-                            valores_inic,
-                            default=default_col,
-                            key=f"fi_{col}",
-                            help=None,
-                            on_change=_on_change_intervencao,
-                        )
-                    else:
-                        valores_inic = sorted(
-                            [
-                                str(v).strip()
-                                for v in df_opcoes_inic[col].dropna().unique()
-                                if str(v).strip()
-                                and "Unnamed" not in str(v)
-                            ],
-                            key=chave_ordenacao_alfabetica,
-                        )
+                    filtros_sel_inic[col] = st.multiselect(
+                        traduzir(col),
+                        valores_inic,
+                        key=f"fi_{col}",
+                        format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
+                        help=ajuda,
+                    )
 
-                        mapa_lbl = {}
-                        if "Arquivo_origem" in df_iniciativas.columns:
-                            for v in valores_inic:
-                                ors = df_iniciativas.loc[
-                                    df_iniciativas[col]
-                                    .astype(str).str.strip()
-                                    == v,
-                                    "Arquivo_origem",
-                                ].dropna().unique()
-                                if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
-                                    mapa_lbl[v] = f"{v}{SUFIXO_PENHA}"
-                                else:
-                                    mapa_lbl[v] = v
-
-                        ajuda = (
-                            "Este campo é apenas o detalhamento do campo "
-                            '"Abrangência".'
-                            if col == "Modalidade"
-                            else None
-                        )
-
-                        filtros_sel_inic[col] = st.multiselect(
-                            traduzir(col),
-                            valores_inic,
-                            key=f"fi_{col}",
-                            format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
-                            help=ajuda,
-                        )
-
+                    
         for col, sel in filtros_sel_inic.items():
-            if not sel:
-                continue
-            if col == "Intervenção":
-                m = _mascara_intervencao(
-                    df_inic_filtrado["Intervenção"],
-                    df_inic_filtrado["Arquivo_origem"],
-                    sel,
-                )
-                df_inic_filtrado = df_inic_filtrado[m]
-            else:
+            if sel:
                 df_inic_filtrado = df_inic_filtrado[
                     df_inic_filtrado[col].isin(sel)
                 ]
