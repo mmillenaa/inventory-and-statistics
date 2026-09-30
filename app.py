@@ -615,16 +615,11 @@ def norm_col(texto):
 def _ler_aba_geral(xls):
     """Lê a aba 'Geral' de um ExcelFile já aberto.
 
-    Layout assumido:
-      - Linha 1: cabeçalho
-      - Dados a partir da linha 2
-      - Coluna K (idx 10): Gênero documental
-      - Coluna M (idx 12): Espécie/Tipo documental
-      - Coluna O (idx 14): Técnica de registro
-      - Coluna Q (idx 16): Forma documental
-
-    Devolve DataFrame com as 4 colunas de classificação + '_codigo'
-    (Código de referência). Se a aba não existir, devolve DataFrame vazio.
+    Estratégia:
+      1. Encontra a aba cujo nome (normalizado) é "geral".
+      2. Auto-detecta a linha de cabeçalho (procura por "código",
+         "referência" ou "gênero" nas primeiras 15 linhas).
+      3. Mapeia as colunas por NOME (fallback: por posição K/M/O/Q).
     """
     aba_geral = None
     for s in xls.sheet_names:
@@ -635,26 +630,50 @@ def _ler_aba_geral(xls):
         return pd.DataFrame()
 
     try:
-        df = pd.read_excel(xls, sheet_name=aba_geral, header=0)
+        df_raw = pd.read_excel(xls, sheet_name=aba_geral, header=None, nrows=15)
     except Exception:
         return pd.DataFrame()
 
-    if df.empty or len(df.columns) < 17:
+    # Auto-detecta a linha de cabeçalho
+    linha_header = 0
+    for i, row in df_raw.iterrows():
+        vals_norm = [norm_col(v) for v in row if pd.notna(v)]
+        tem_cod = any("codigo" in v or "referencia" in v for v in vals_norm)
+        tem_gen = any("genero" in v for v in vals_norm)
+        if tem_cod or tem_gen:
+            linha_header = i
+            break
+
+    try:
+        df = pd.read_excel(xls, sheet_name=aba_geral, header=linha_header)
+    except Exception:
+        return pd.DataFrame()
+
+    if df.empty:
         return pd.DataFrame()
 
     cols = list(df.columns)
-    c_gen = cols[10]  # K
-    c_esp = cols[12]  # M
-    c_tec = cols[14]  # O
-    c_for = cols[16]  # Q
 
-    # Localiza Código de referência pelo nome do cabeçalho
-    c_cod = None
-    for c in cols:
-        cn = norm_col(str(c))
-        if "codigo" in cn or "referencia" in cn:
-            c_cod = c
-            break
+    def _por_nome(*nomes):
+        for c in cols:
+            cn = norm_col(str(c))
+            if any(n in cn for n in nomes):
+                return c
+        return None
+
+    def _por_pos(idx, *nomes):
+        if idx < len(cols):
+            return cols[idx]
+        return _por_nome(*nomes)
+
+    c_gen = _por_nome("genero documental") or _por_pos(10, "genero")
+    c_esp = _por_nome("especie/tipo", "especie", "tipo documental") or _por_pos(12, "especie")
+    c_tec = _por_nome("tecnica de registro", "tecnica") or _por_pos(14, "tecnica")
+    c_for = _por_nome("forma documental", "forma") or _por_pos(16, "forma")
+    c_cod = _por_nome("codigo de referencia", "codigo", "referencia")
+
+    if not (c_gen and c_esp and c_tec and c_for):
+        return pd.DataFrame()
 
     def _limpa(v):
         try:
@@ -781,6 +800,44 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                         'Espécie/Tipo documental': classif.get("Espécie/Tipo documental", ""),
                         'Técnica de registro': classif.get("Técnica de registro", ""),
                         'Forma documental': classif.get("Forma documental", ""),
+                    })
+
+            elif tipo_aba == 'iniciativas':
+                c_tit = get_col('nome da iniciativa', 'titulo', 'iniciativa')
+                c_int = get_col('intervencao', 'finalidade')
+                c_abr = get_col('abrangencia')
+                c_mod = get_col('modalidade')
+                c_ano = get_col('ano', 'data')
+                c_prop = get_col('proponente')
+                c_link = get_col('fonte / origem', 'fonte', 'origem', 'link')
+
+                def _limpa_interv(v):
+                    try:
+                        if pd.isna(v):
+                            return ''
+                    except (TypeError, ValueError):
+                        pass
+                    s = str(v).strip()
+                    if s.lower() in (
+                        '', 'na', 'n/a', 'nan', 'none', 'null', '-', '--'
+                    ):
+                        return ''
+                    return s
+
+                for _, r in df.iterrows():
+                    t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
+                    if not t or t.lower() in ('nan', 'none'):
+                        continue
+
+                    linhas_iniciativas.append({
+                        'Arquivo_origem': nome_arq,
+                        'Nome da iniciativa': t,
+                        'Intervenção': _limpa_interv(r[c_int]) if c_int else '',
+                        'Abrangência': str(r[c_abr]).strip() if c_abr and pd.notna(r[c_abr]) else '',
+                        'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
+                        'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
+                        'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
+                        'Fonte / Origem': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
                     })
 
     df_cat = pd.DataFrame(linhas_catalogacao)
@@ -1599,7 +1656,7 @@ with aba_iniciativas:
             st.session_state["_inic_sel_sig"] = sel_sig
 
         _, df_iniciativas = carregar_e_cruzar_dados(sel_inic, pasta_acervo_inic)
-        
+
         # -------- Busca avançada --------
         st.subheader(traduzir("Busca avançada"))
         termo_inic = st.text_input(
