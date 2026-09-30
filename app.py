@@ -1407,8 +1407,8 @@ html_arvore = """
 <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
 <details>
 <summary>Subsérie: Criar, construir, inaugurar (1952-1978)</summary>
-<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada (seleção).</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</summary>
@@ -1452,7 +1452,7 @@ html_arvore = """
 <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
-<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso.</span></div>
+<div class="item-simples"><span class="status-badge bg-amarelo">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 <details>
