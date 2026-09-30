@@ -1,7 +1,6 @@
 import os
 import re
 import unicodedata
-from collections import Counter
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -14,16 +13,6 @@ import streamlit_antd_components as sac  # noqa: F401  (mantido conforme origina
 from bs4 import BeautifulSoup
 from nltk.stem import RSLPStemmer
 from wordcloud import WordCloud
-
-from vocabulario_controlado import (
-    DICT_ESPECIE,
-    DICT_FORMA,
-    DICT_GENERO,
-    DICT_TECNICA,
-    descrever_sigla,
-    rotular_sigla,
-    rotulo_curto_sigla,
-)
 
 
 # ============================================================
@@ -423,9 +412,9 @@ def traduzir(texto_pt):
             "Español": "Técnica de registro",
         },
         "Arquivo_origem": {"English": "Source file", "Español": "Archivo de origen"},
-        "Forma documental": {
-            "English": "Documentary form",
-            "Español": "Forma documental",
+        "Sem descrição cadastrada para:": {
+            "English": "No description registered for:",
+            "Español": "Sin descripción registrada para:",
         },
                 "Rememorações e Notícias": {
             "English": "Remembrances and News",
@@ -440,7 +429,7 @@ def traduzir(texto_pt):
         "Intervenção": {"English": "Intervention", "Español": "Intervención"},
         "Ano": {"English": "Year", "Español": "Año"},
         "Proponente": {"English": "Proponent", "Español": "Proponente"},
-        "Fonte / Origem": {"English": "Source / Origin", "Español": "Fuente / Origen"},
+        "Link / Fonte": {"English": "Link / Source", "Español": "Enlace / Fuente"},
         "Pesquisar termo nas iniciativas (ex: podcast, exposição, filme)": {
             "English": "Search term in initiatives (e.g., podcast, exhibition, film)",
             "Español": "Buscar término en iniciativas (ej: podcast, exposición, película)",
@@ -460,25 +449,7 @@ def traduzir(texto_pt):
         "Frequência de datas grafadas nas iniciativas": {
             "English": "Frequency of dates written in initiatives",
             "Español": "Frecuencia de fechas escritas en las iniciativas",
-        },
-        "Nuvem de palavras": {
-            "English": "Word cloud",
-            "Español": "Nube de palabras",
-        },
-        "O que deve conter? Selecione as colunas para gerar a nuvem:": {
-            "English": (
-                "What should it include? Select the columns to generate "
-                "the cloud:"
-            ),
-            "Español": (
-                "¿Qué debe contener? Seleccione las columnas para generar "
-                "la nube:"
-            ),
-        },
-        "Selecione ao menos uma coluna para gerar a nuvem.": {
-            "English": "Select at least one column to generate the cloud.",
-            "Español": "Seleccione al menos una columna para generar la nube.",
-        },
+        },        
     }
 
     if idioma == "Português" or texto_pt not in dicionario:
@@ -599,105 +570,6 @@ st.markdown(css_base, unsafe_allow_html=True)
 # ============================================================
 # FUNÇÕES DE EXTRAÇÃO, CACHE E WEBSCRAPING
 # ============================================================
-def norm_col(texto):
-    """Normaliza um nome de coluna/aba: sem acento, minúsculo, sem espaços."""
-    if pd.isna(texto):
-        return ""
-    return (
-        unicodedata.normalize("NFKD", str(texto))
-        .encode("ASCII", "ignore")
-        .decode("utf-8")
-        .lower()
-        .strip()
-    )
-
-
-def _ler_aba_geral(xls):
-    """Lê a aba 'Geral' de um ExcelFile já aberto.
-
-    Estratégia:
-      1. Encontra a aba cujo nome (normalizado) é "geral".
-      2. Auto-detecta a linha de cabeçalho (procura por "código",
-         "referência" ou "gênero" nas primeiras 15 linhas).
-      3. Mapeia as colunas por NOME (fallback: por posição K/M/O/Q).
-    Devolve DataFrame com 4 colunas de classificação + '_codigo'.
-    """
-    aba_geral = None
-    for s in xls.sheet_names:
-        if norm_col(s) == "geral":
-            aba_geral = s
-            break
-    if aba_geral is None:
-        return pd.DataFrame()
-
-    try:
-        df_raw = pd.read_excel(xls, sheet_name=aba_geral, header=None, nrows=15)
-    except Exception:
-        return pd.DataFrame()
-
-    # Auto-detecta a linha de cabeçalho
-    linha_header = 0
-    for i, row in df_raw.iterrows():
-        vals_norm = [norm_col(v) for v in row if pd.notna(v)]
-        tem_cod = any("codigo" in v or "referencia" in v for v in vals_norm)
-        tem_gen = any("genero" in v for v in vals_norm)
-        if tem_cod or tem_gen:
-            linha_header = i
-            break
-
-    try:
-        df = pd.read_excel(xls, sheet_name=aba_geral, header=linha_header)
-    except Exception:
-        return pd.DataFrame()
-
-    if df.empty:
-        return pd.DataFrame()
-
-    cols = list(df.columns)
-
-    def _por_nome(*nomes):
-        for c in cols:
-            cn = norm_col(str(c))
-            if any(n in cn for n in nomes):
-                return c
-        return None
-
-    def _por_pos(idx, *nomes):
-        if idx < len(cols):
-            return cols[idx]
-        return _por_nome(*nomes)
-
-    c_gen = _por_nome("genero documental") or _por_pos(10, "genero")
-    c_esp = (
-        _por_nome("especie/tipo", "especie", "tipo documental")
-        or _por_pos(12, "especie")
-    )
-    c_tec = _por_nome("tecnica de registro", "tecnica") or _por_pos(14, "tecnica")
-    c_for = _por_nome("forma documental", "forma") or _por_pos(16, "forma")
-    c_cod = _por_nome("codigo de referencia", "codigo", "referencia")
-
-    if not (c_gen and c_esp and c_tec and c_for):
-        return pd.DataFrame()
-
-    def _limpa(v):
-        try:
-            if pd.isna(v):
-                return ""
-        except (TypeError, ValueError):
-            pass
-        s = str(v).strip()
-        return "" if s.lower() in ("nan", "none", "null", "n/a", "") else s
-
-    out = pd.DataFrame({
-        "Gênero documental": df[c_gen].map(_limpa),
-        "Espécie/Tipo documental": df[c_esp].map(_limpa),
-        "Técnica de registro": df[c_tec].map(_limpa),
-        "Forma documental": df[c_for].map(_limpa),
-    })
-    out["_codigo"] = df[c_cod].map(_limpa) if c_cod is not None else ""
-    return out
-
-
 @st.cache_data
 def carregar_e_cruzar_dados(lista_arquivos, pasta):
     """
@@ -707,28 +579,17 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
     linhas_catalogacao = []
     linhas_iniciativas = []
 
+    def norm_col(texto):
+        if pd.isna(texto): return ""
+        return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("utf-8").lower().strip()
+
     for nome_arq in lista_arquivos:
         caminho = os.path.join(pasta, nome_arq)
         if not os.path.exists(caminho):
             continue
 
         xls = pd.ExcelFile(caminho)
-
-        # Lê a aba "Geral" deste arquivo (fonte de classificação)
-        df_geral_arq = _ler_aba_geral(xls)
-        mapa_classif = {}
-        if not df_geral_arq.empty:
-            for _, g in df_geral_arq.iterrows():
-                cod = str(g.get("_codigo", "")).strip()
-                if not cod or cod.lower() in ("nan", "none", ""):
-                    continue
-                mapa_classif[cod] = {
-                    "Gênero documental": g["Gênero documental"],
-                    "Espécie/Tipo documental": g["Espécie/Tipo documental"],
-                    "Técnica de registro": g["Técnica de registro"],
-                    "Forma documental": g["Forma documental"],
-                }
-
+        
         for aba in xls.sheet_names:
             aba_norm = norm_col(aba)
             abas_ignoradas = ['classificacao', 'notas_e_legenda', 'vocabulario_controlado', 'organizacao', 'lista de movimentos', 'definicoes', 'acervo']
@@ -758,16 +619,9 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
             cols_norm = {c: norm_col(c) for c in df.columns}
             
             def get_col(*frags):
-                # 1) match exato primeiro (evita "Anotação" casar com "ano")
-                for f in frags:
-                    for c in df.columns:
-                        if cols_norm[c] == f:
-                            return c
-                # 2) match por substring como fallback
-                for f in frags:
-                    for c in df.columns:
-                        if f in cols_norm[c]:
-                            return c
+                for c in df.columns:
+                    if any(f in cols_norm[c] for f in frags):
+                        return c
                 return None
 
             if tipo_aba == 'catalogacao':
@@ -780,53 +634,37 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                 c_cod = get_col('codigo de referencia', 'codigo')
                 c_kw  = get_col('palavras', 'palavra-chave')
                 c_not = get_col('notas', 'observacao', 'condicoes')
+                c_gen = get_col('genero')
+                c_esp = get_col('especie', 'tipo doc')
+                c_tec = get_col('tecnica')
+                
                 for _, r in df.iterrows():
                     t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
                     if not t or t.lower() in ('nan', 'none'):
                         continue
-
-                    cod_ref = (
-                        str(r[c_cod]).strip()
-                        if c_cod and pd.notna(r[c_cod]) else ''
-                    )
-                    classif = mapa_classif.get(cod_ref, {})
-
+                        
                     linhas_catalogacao.append({
                         'Arquivo_origem': nome_arq,
                         'Aba_origem': aba,
                         'Título (Busca)': t,
                         'Conteúdo (Busca)': str(r[c_con]).strip() if c_con and pd.notna(r[c_con]) else '',
                         'Data (Busca)': str(r[c_dat]).strip() if c_dat and pd.notna(r[c_dat]) else '',
-                        'Código de referência': cod_ref,
+                        'Código de referência': str(r[c_cod]).strip() if c_cod and pd.notna(r[c_cod]) else '',
                         'Palavras-chave': str(r[c_kw]).strip() if c_kw and pd.notna(r[c_kw]) else '',
                         'Notas (Busca)': str(r[c_not]).strip() if c_not and pd.notna(r[c_not]) else '',
-                        'Gênero documental': classif.get("Gênero documental", ""),
-                        'Espécie/Tipo documental': classif.get("Espécie/Tipo documental", ""),
-                        'Técnica de registro': classif.get("Técnica de registro", ""),
-                        'Forma documental': classif.get("Forma documental", ""),
+                        'Gênero documental': str(r[c_gen]).strip() if c_gen and pd.notna(r[c_gen]) else '',
+                        'Espécie/Tipo documental': str(r[c_esp]).strip() if c_esp and pd.notna(r[c_esp]) else '',
+                        'Técnica de registro': str(r[c_tec]).strip() if c_tec and pd.notna(r[c_tec]) else '',
                     })
-
+            
             elif tipo_aba == 'iniciativas':
-                c_tit = get_col('nome da iniciativa', 'iniciativa', 'titulo')
+                c_tit = get_col('nome da iniciativa', 'titulo', 'iniciativa')
                 c_int = get_col('intervencao', 'finalidade')
                 c_abr = get_col('abrangencia')
                 c_mod = get_col('modalidade')
                 c_ano = get_col('ano', 'data')
                 c_prop = get_col('proponente')
-                c_link = get_col('fonte / origem', 'fonte', 'origem', 'link')
-
-                def _limpa_interv(v):
-                    try:
-                        if pd.isna(v):
-                            return ''
-                    except (TypeError, ValueError):
-                        pass
-                    s = str(v).strip()
-                    if s.lower() in (
-                        '', 'na', 'n/a', 'nan', 'none', 'null', '-', '--'
-                    ):
-                        return ''
-                    return s
+                c_link = get_col('link', 'fonte')
 
                 for _, r in df.iterrows():
                     t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
@@ -836,34 +674,16 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     linhas_iniciativas.append({
                         'Arquivo_origem': nome_arq,
                         'Nome da iniciativa': t,
-                        'Intervenção': _limpa_interv(r[c_int]) if c_int else '',
+                        'Intervenção': str(r[c_int]).strip() if c_int and pd.notna(r[c_int]) else '',
                         'Abrangência': str(r[c_abr]).strip() if c_abr and pd.notna(r[c_abr]) else '',
                         'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
                         'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
                         'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
-                        'Fonte / Origem': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
+                        'Link / Fonte': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
                     })
 
     df_cat = pd.DataFrame(linhas_catalogacao)
     df_inic = pd.DataFrame(linhas_iniciativas)
-
-    # Deduplica variações de caixa em "Nome da iniciativa"
-    # (ex.: "roteiro de memória" e "Roteiro de Memória" viram um só valor).
-    if not df_inic.empty and 'Nome da iniciativa' in df_inic.columns:
-        df_inic['_chave_norm'] = (
-            df_inic['Nome da iniciativa'].astype(str)
-            .str.strip()
-            .str.replace(r"\s+", " ", regex=True)
-            .str.lower()
-        )
-        mapa_canonico = (
-            df_inic[df_inic['Nome da iniciativa'].notna()]
-            .groupby('_chave_norm')['Nome da iniciativa']
-            .first()
-            .to_dict()
-        )
-        df_inic['Nome da iniciativa'] = df_inic['_chave_norm'].map(mapa_canonico)
-        df_inic = df_inic.drop(columns=['_chave_norm'])
     
     # Deduplicação segura: garante a não-duplicidade pelo código de referência.
     if not df_cat.empty and 'Código de referência' in df_cat.columns:
@@ -877,8 +697,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
         df_cat = pd.DataFrame(columns=[
             'Arquivo_origem', 'Aba_origem', 'Título (Busca)', 'Conteúdo (Busca)', 
             'Data (Busca)', 'Código de referência', 'Palavras-chave', 'Notas (Busca)', 
-            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro',
-            'Forma documental'
+            'Gênero documental', 'Espécie/Tipo documental', 'Técnica de registro'
         ])
         
     return df_cat, df_inic
@@ -1281,14 +1100,6 @@ with aba_inventario:
 
     # Usando a nova função que retorna as duas bases separadas
     df_consolidado, _ = carregar_e_cruzar_dados(selecionados, pasta_acervo)
-    # DEBUG TEMPORÁRIO — remover depois
-    with st.expander("DEBUG — classificação lida", expanded=False):
-        st.write("Colunas:", list(df_consolidado.columns))
-        for _c in ["Gênero documental", "Espécie/Tipo documental",
-                   "Técnica de registro", "Forma documental"]:
-            if _c in df_consolidado.columns:
-                amostra = df_consolidado[_c].dropna().unique()[:15]
-                st.write(f"**{_c}** → {list(amostra)}")
     st.subheader(traduzir("Busca avançada"))
     termo = st.text_input(
         traduzir("Pesquisar termo nas planilhas (ex: criança, portão, costura)")
@@ -1306,12 +1117,10 @@ with aba_inventario:
             ),
             axis=1,
         )
-        partes_termo = [p for p in termo_stem.split() if p]
-        mask = pd.Series(True, index=df_filtrado.index)
-        for p in partes_termo:
-            mask &= df_filtrado["NORMAL_BUSCA"].str.contains(
-                rf"\b{p}\b", regex=True, na=False
-            )
+        padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
+        mask = df_filtrado["NORMAL_BUSCA"].str.contains(
+            padrao, regex=True, na=False
+        )
         df_filtrado = df_filtrado[mask].drop(columns=["NORMAL_BUSCA"])
 
     st.subheader(traduzir("Filtros categoriais"))
@@ -1319,19 +1128,25 @@ with aba_inventario:
         "Gênero documental",
         "Espécie/Tipo documental",
         "Técnica de registro",
-        "Forma documental",
+        "Arquivo_origem",
     ]
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
-    TIPOS_SIGLA = {
-        "Gênero documental": "genero",
-        "Espécie/Tipo documental": "especie",
-        "Técnica de registro": "tecnica",
-        "Forma documental": "forma",
+    dicionario_siglas = {
+        "FOT": traduzir("Fotografia (FOT)"),
+        "PLN": traduzir("Planta cartográfica (PLN)"),
+        "DGZ": traduzir("Digitalizado (DGZ)"),
+        "ICO": traduzir("Iconográfico (ICO)"),
+        "MTO": traduzir("Meio magnético/ótico (MTO)"),
+        "TXT": traduzir("Textual (TXT)"),
+        "AVS": traduzir("Audiovisual (AVS)"),
+        "FLG": traduzir("Filmográfico (FLG)"),
+        "FME": traduzir("Filme (FME)"),
+        "NOT": traduzir("Notícia (NOT)"),
+        "REL": traduzir("Relatório (REL)"),
+        "NDG": traduzir("Nato-digital (NDG)"),
+        "NDT": traduzir("Não determinado (NDT)"),
     }
-
-    def _rotular(valor, coluna=None):
-        return rotulo_curto_sigla(valor, tipo=TIPOS_SIGLA.get(coluna))
 
     filtros_selecionados = {}
     if cols_exist and not df_filtrado.empty:
@@ -1355,9 +1170,9 @@ with aba_inventario:
 
                 filtros_selecionados[col] = st.multiselect(
                     traduzir(col),
-                    sorted(valores, key=chave_ordenacao_alfabetica),
+                    sorted(valores),
                     key=f"f_{col}",
-                    format_func=lambda x, _c=col: _rotular(x, _c) or str(x),
+                    format_func=lambda x: dicionario_siglas.get(str(x), str(x)),
                 )
 
     for col, sel in filtros_selecionados.items():
@@ -1648,25 +1463,6 @@ with aba_iniciativas:
         if not sel_inic:
             st.stop()
 
-        # Se a seleção de planilhas mudou, limpa os filtros anteriores.
-        # Sem isso, um filtro antigo (ex.: "Rememorações todas (Carandiru)")
-        # fica preso no estado e zera os resultados ao trocar de arquivos.
-        sel_sig = tuple(sorted(sel_inic))
-        if st.session_state.get("_inic_sel_sig") != sel_sig:
-            for k in (
-                "fi_Nome da iniciativa",
-                "fi_Intervenção",
-                "fi_Abrangência",
-                "fi_Modalidade",
-                "fi_Nome da iniciativa__prev",
-                "fi_Intervenção__prev",
-                "fi_Abrangência__prev",
-                "fi_Modalidade__prev",
-                "cols_nuvem_inic",
-            ):
-                st.session_state.pop(k, None)
-            st.session_state["_inic_sel_sig"] = sel_sig
-
         _, df_iniciativas = carregar_e_cruzar_dados(sel_inic, pasta_acervo_inic)
 
         # -------- Busca avançada --------
@@ -1690,11 +1486,10 @@ with aba_iniciativas:
             termo_norm = normalizar_texto(termo_inic, stemmer)
             partes_termo = [p for p in termo_norm.split() if p]
             if partes_termo:
-                mask_i = pd.Series(True, index=df_inic_filtrado.index)
-                for p in partes_termo:
-                    mask_i &= df_inic_filtrado["NORMAL_BUSCA"].str.contains(
-                        rf"\b{p}\b", regex=True, na=False
-                    )
+                padrao = r"\b" + r"\b|\b".join(partes_termo) + r"\b"
+                mask_i = df_inic_filtrado["NORMAL_BUSCA"].str.contains(
+                    padrao, regex=True, na=False
+                )
                 df_inic_filtrado = df_inic_filtrado[mask_i].drop(
                     columns=["NORMAL_BUSCA"]
                 )
@@ -1709,59 +1504,6 @@ with aba_iniciativas:
         ]
         cols_exist_inic = [c for c in cols_int_inic if c in df_iniciativas.columns]
 
-        ARQUIVO_PENHA = (
-            "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx"
-        )
-        ARQUIVO_CARANDIRU = (
-            "BR-SPCARANDIRU_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx"
-        )
-        INDIVIDUAIS_CARANDIRU = {
-            "Rememoração",
-            "Manifestação artístico-cultural",
-            "Produção midiática",
-        }
-        OPCAO_TODAS_CARANDIRU = "Rememorações todas (Carandiru)"
-        SUFIXO_PENHA = " (Massacre da Penha)"
-
-        def _mascara_intervencao(serie_valor, serie_arquivo, selecionados):
-            mask = pd.Series(False, index=serie_valor.index)
-            for v in selecionados:
-                if v == OPCAO_TODAS_CARANDIRU:
-                    # "Todas" = todas as linhas do Carandiru,
-                    # independentemente de terem Intervenção preenchida.
-                    sub = serie_arquivo == ARQUIVO_CARANDIRU
-                elif v.endswith(SUFIXO_PENHA):
-                    base = v[: -len(SUFIXO_PENHA)]
-                    sub = (
-                        (serie_valor == base)
-                        & (serie_arquivo == ARQUIVO_PENHA)
-                    )
-                else:
-                    sub = serie_valor == v
-                mask |= sub
-            return mask
-
-        def _on_change_intervencao():
-            key = "fi_Intervenção"
-            atual = list(st.session_state.get(key, []) or [])
-            anterior = list(st.session_state.get(f"{key}__prev", []) or [])
-            adicionadas = [v for v in atual if v not in anterior]
-
-            if OPCAO_TODAS_CARANDIRU in adicionadas:
-                atual = [v for v in atual if v not in INDIVIDUAIS_CARANDIRU]
-            elif any(v in INDIVIDUAIS_CARANDIRU for v in adicionadas):
-                atual = [v for v in atual if v != OPCAO_TODAS_CARANDIRU]
-
-            st.session_state[key] = atual
-            st.session_state[f"{key}__prev"] = list(atual)
-
-        origens_presentes = (
-            set(df_iniciativas["Arquivo_origem"].dropna().unique())
-            if "Arquivo_origem" in df_iniciativas.columns
-            else set()
-        )
-        apenas_carandiru = origens_presentes == {ARQUIVO_CARANDIRU}
-
         filtros_sel_inic = {}
         if cols_exist_inic and not df_inic_filtrado.empty:
             l_cols_inic = st.columns(len(cols_exist_inic))
@@ -1774,122 +1516,24 @@ with aba_iniciativas:
                     df_opcoes_inic = df_iniciativas.copy()
                     for o_col, sel_vals in selecoes_ativas_inic.items():
                         if o_col != col and sel_vals:
-                            if o_col == "Intervenção":
-                                m = _mascara_intervencao(
-                                    df_opcoes_inic["Intervenção"],
-                                    df_opcoes_inic["Arquivo_origem"],
-                                    sel_vals,
-                                )
-                                df_opcoes_inic = df_opcoes_inic[m]
-                            else:
-                                df_opcoes_inic = df_opcoes_inic[
-                                    df_opcoes_inic[o_col].isin(sel_vals)
-                                ]
-
-                    if col == "Intervenção":
-                        pares = (
-                            df_opcoes_inic[["Intervenção", "Arquivo_origem"]]
-                            .dropna()
-                            .drop_duplicates()
-                        )
-                        valores_inic = []
-                        vistos = set()
-                        for val, arq in pares.itertuples(index=False):
-                            val = str(val).strip()
-                            arq = str(arq).strip()
-                            if not val:
-                                continue
-                            lbl = (
-                                f"{val}{SUFIXO_PENHA}"
-                                if arq == ARQUIVO_PENHA
-                                else val
-                            )
-                            if lbl in vistos:
-                                continue
-                            vistos.add(lbl)
-                            valores_inic.append(lbl)
-
-                        valores_inic = sorted(
-                            valores_inic, key=chave_ordenacao_alfabetica
-                        )
-
-                        if ARQUIVO_CARANDIRU in origens_presentes:
-                            valores_inic = [
-                                v for v in valores_inic
-                                if v != OPCAO_TODAS_CARANDIRU
+                            df_opcoes_inic = df_opcoes_inic[
+                                df_opcoes_inic[o_col].isin(sel_vals)
                             ]
-                            valores_inic.insert(0, OPCAO_TODAS_CARANDIRU)
-
-                        default_col = (
-                            [OPCAO_TODAS_CARANDIRU]
-                            if apenas_carandiru
-                            else []
-                        )
-
-                        if "fi_Intervenção__prev" not in st.session_state:
-                            st.session_state["fi_Intervenção__prev"] = list(
-                                default_col
-                            )
-
-                        filtros_sel_inic[col] = st.multiselect(
-                            traduzir(col),
-                            valores_inic,
-                            default=default_col,
-                            key=f"fi_{col}",
-                            help=None,
-                            on_change=_on_change_intervencao,
-                        )
-                    else:
-                        valores_inic = sorted(
-                            [
-                                str(v).strip()
-                                for v in df_opcoes_inic[col].dropna().unique()
-                                if str(v).strip()
-                                and "Unnamed" not in str(v)
-                            ],
-                            key=chave_ordenacao_alfabetica,
-                        )
-
-                        mapa_lbl = {}
-                        if "Arquivo_origem" in df_iniciativas.columns:
-                            for v in valores_inic:
-                                ors = df_iniciativas.loc[
-                                    df_iniciativas[col]
-                                    .astype(str).str.strip()
-                                    == v,
-                                    "Arquivo_origem",
-                                ].dropna().unique()
-                                if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
-                                    mapa_lbl[v] = f"{v}{SUFIXO_PENHA}"
-                                else:
-                                    mapa_lbl[v] = v
-
-                        ajuda = (
-                            "Este campo é apenas o detalhamento do campo "
-                            '"Abrangência".'
-                            if col == "Modalidade"
-                            else None
-                        )
-
-                        filtros_sel_inic[col] = st.multiselect(
-                            traduzir(col),
-                            valores_inic,
-                            key=f"fi_{col}",
-                            format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
-                            help=ajuda,
-                        )
+                    valores_inic = sorted(
+                        [
+                            str(v).strip()
+                            for v in df_opcoes_inic[col].dropna().unique()
+                            if str(v).strip() and "Unnamed" not in str(v)
+                        ]
+                    )
+                    filtros_sel_inic[col] = st.multiselect(
+                        traduzir(col),
+                        valores_inic,
+                        key=f"fi_{col}",
+                    )
 
         for col, sel in filtros_sel_inic.items():
-            if not sel:
-                continue
-            if col == "Intervenção":
-                m = _mascara_intervencao(
-                    df_inic_filtrado["Intervenção"],
-                    df_inic_filtrado["Arquivo_origem"],
-                    sel,
-                )
-                df_inic_filtrado = df_inic_filtrado[m]
-            else:
+            if sel:
                 df_inic_filtrado = df_inic_filtrado[
                     df_inic_filtrado[col].isin(sel)
                 ]
@@ -1903,7 +1547,7 @@ with aba_iniciativas:
         st.subheader(traduzir("Análises e visualizações do acervo"))
         op_limpar_i = traduzir("Nenhuma visualização (limpar tela)")
         op_timeline_i = traduzir("Linha do tempo (distribuição cronológica)")
-        op_nuvem_i = traduzir("Nuvem de palavras")
+        op_nuvem_i = traduzir("Nuvem de palavras (Nome da iniciativa)")
 
         vis_inic = st.selectbox(
             traduzir("Escolha uma visualização ou eixo temático:"),
@@ -1958,108 +1602,61 @@ with aba_iniciativas:
                     st.plotly_chart(fig_linha_inic, use_container_width=True)
 
         elif vis_inic == op_nuvem_i and not df_inic_filtrado.empty:
-            colunas_disponiveis = [
-                c for c in [
-                    "Nome da iniciativa",
-                    "Ano",
-                    "Proponente",
-                    "Fonte / Origem",
-                    "Intervenção",
-                    "Abrangência",
-                    "Modalidade",
+            textos_inic = []
+            for c in [
+                "Nome da iniciativa",
+                "Intervenção",
+                "Abrangência",
+                "Modalidade",
+                "Proponente",
+            ]:
+                if c in df_inic_filtrado.columns:
+                    textos_inic += (
+                        df_inic_filtrado[c].dropna().astype(str).tolist()
+                    )
+            texto_completo_inic = " ".join(textos_inic).strip()
+
+            stopwords_i = set(
+                [
+                    "de", "a", "o", "que", "e", "do", "da", "em", "um",
+                    "para", "com", "não", "uma", "os", "no", "se", "na",
+                    "por", "mais", "as", "dos", "como", "mas", "ao", "ele",
+                    "das", "à", "seu", "sua", "ou", "quando", "muito", "nos",
+                    "já", "eu", "também", "só", "pelo", "pela", "até", "isso",
+                    "ela", "entre", "depois", "sem", "mesmo", "aos", "seus",
+                    "quem", "nas", "me", "esse", "eles", "você", "essa",
+                    "num", "nem", "suas", "meu", "às", "minha", "numa",
+                    "pelos", "elas", "qual", "nós", "lhe", "deles", "essas",
+                    "esses", "pelas", "este", "dele", "tu", "te", "vocês",
+                    "vos", "lhes", "meus", "minhas", "teu", "tua", "teus",
+                    "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
                 ]
-                if c in df_inic_filtrado.columns
-            ]
-
-            cols_escolhidas = st.multiselect(
-                traduzir(
-                    "O que deve conter? Selecione as colunas para gerar "
-                    "a nuvem:"
-                ),
-                colunas_disponiveis,
-                default=colunas_disponiveis,
-                key="cols_nuvem_inic",
             )
-
-            if not cols_escolhidas:
-                st.info(
+            try:
+                wc_inic = WordCloud(
+                    width=800,
+                    height=400,
+                    background_color="rgba(0,0,0,0)",
+                    mode="RGBA",
+                    colormap="viridis",
+                    stopwords=stopwords_i,
+                    max_words=100,
+                ).generate(texto_completo_inic)
+                fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                ax_i.imshow(wc_inic, interpolation="bilinear")
+                ax_i.axis("off")
+                fig_i.patch.set_alpha(0)
+                st.pyplot(fig_i)
+            except ValueError:
+                st.warning(
                     traduzir(
-                        "Selecione ao menos uma coluna para gerar a nuvem."
+                        "Não há vocabulário útil suficiente nos itens "
+                        "filtrados para gerar a nuvem de palavras. Tente "
+                        "remover alguns filtros."
                     )
                 )
-            else:
-                stopwords_i = set(
-                    [
-                        "de", "a", "o", "que", "e", "do", "da", "em", "um",
-                        "para", "com", "não", "uma", "os", "no", "se", "na",
-                        "por", "mais", "as", "dos", "como", "mas", "ao",
-                        "ele", "das", "à", "seu", "sua", "ou", "quando",
-                        "muito", "nos", "já", "eu", "também", "só", "pelo",
-                        "pela", "até", "isso", "ela", "entre", "depois",
-                        "sem", "mesmo", "aos", "seus", "quem", "nas", "me",
-                        "esse", "eles", "você", "essa", "num", "nem", "suas",
-                        "meu", "às", "minha", "numa", "pelos", "elas",
-                        "qual", "nós", "lhe", "deles", "essas", "esses",
-                        "pelas", "este", "dele", "tu", "te", "vocês", "vos",
-                        "lhes", "meus", "minhas", "teu", "tua", "teus",
-                        "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
-                    ]
-                )
 
-                contador = Counter()
-                for c in cols_escolhidas:
-                    for texto in df_inic_filtrado[c].dropna().astype(str):
-                        s = texto.strip()
-                        if not s or s.lower() in (
-                            "nan", "none", "null", "na", "n/a"
-                        ):
-                            continue
-                        # O limite de um termo é a vírgula (não o espaço)
-                        partes = re.split(r"[,;\n\r]+", s)
-                        for parte in partes:
-                            frase = re.sub(r"\s+", " ", parte).strip(" .-")
-                            if not frase:
-                                continue
-                            if frase.lower() in (
-                                "nan", "none", "null", "na", "n/a"
-                            ):
-                                continue
-                            # Descarta frases onde TODAS as palavras são
-                            # stopwords
-                            palavras = [p for p in frase.split() if p]
-                            uteis = [
-                                p for p in palavras
-                                if p.strip(".,;:!?()[]\"'").lower()
-                                not in stopwords_i
-                            ]
-                            if not uteis:
-                                continue
-                            # Anos e números também contam como termo útil
-                            contador[frase] += 1
-
-                if not contador:
-                    st.warning(
-                        traduzir(
-                            "Não há vocabulário útil suficiente nos itens "
-                            "filtrados para gerar a nuvem de palavras. Tente "
-                            "remover alguns filtros."
-                        )
-                    )
-                else:
-                    wc_inic = WordCloud(
-                        width=800,
-                        height=400,
-                        background_color="rgba(0,0,0,0)",
-                        mode="RGBA",
-                        colormap="viridis",
-                        max_words=100,
-                        collocations=False,
-                    ).generate_from_frequencies(dict(contador))
-                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
-                    ax_i.imshow(wc_inic, interpolation="bilinear")
-                    ax_i.axis("off")
-                    fig_i.patch.set_alpha(0)
-                    st.pyplot(fig_i)
+        st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
 
 # ============================================================
 # ABA 3: VISÃO GERAL DO ACERVO
