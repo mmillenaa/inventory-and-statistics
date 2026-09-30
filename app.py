@@ -64,6 +64,18 @@ def norm_nome_arquivo(nome):
     return nome
 
 
+def chave_ordenacao_alfabetica(texto):
+    """Chave de ordenação que ignora acentos e caixa (Álbum < Banda)."""
+    if texto is None:
+        return ""
+    return (
+        unicodedata.normalize("NFKD", str(texto))
+        .encode("ASCII", "ignore")
+        .decode("utf-8")
+        .lower()
+    )
+
+
 # ============================================================
 # CONFIGURAÇÃO DA PÁGINA
 # ============================================================
@@ -437,7 +449,25 @@ def traduzir(texto_pt):
         "Frequência de datas grafadas nas iniciativas": {
             "English": "Frequency of dates written in initiatives",
             "Español": "Frecuencia de fechas escritas en las iniciativas",
-        },        
+        },
+        "Nuvem de palavras": {
+            "English": "Word cloud",
+            "Español": "Nube de palabras",
+        },
+        "O que deve conter? Selecione as colunas para gerar a nuvem:": {
+            "English": (
+                "What should it include? Select the columns to generate "
+                "the cloud:"
+            ),
+            "Español": (
+                "¿Qué debe contener? Seleccione las columnas para generar "
+                "la nube:"
+            ),
+        },
+        "Selecione ao menos uma coluna para gerar a nuvem.": {
+            "English": "Select at least one column to generate the cloud.",
+            "Español": "Seleccione al menos una columna para generar la nube.",
+        },
     }
 
     if idioma == "Português" or texto_pt not in dicionario:
@@ -672,6 +702,24 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
     df_cat = pd.DataFrame(linhas_catalogacao)
     df_inic = pd.DataFrame(linhas_iniciativas)
+
+    # Deduplica variações de caixa em "Nome da iniciativa"
+    # (ex.: "roteiro de memória" e "Roteiro de Memória" viram um só valor).
+    if not df_inic.empty and 'Nome da iniciativa' in df_inic.columns:
+        df_inic['_chave_norm'] = (
+            df_inic['Nome da iniciativa'].astype(str)
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+            .str.lower()
+        )
+        mapa_canonico = (
+            df_inic[df_inic['Nome da iniciativa'].notna()]
+            .groupby('_chave_norm')['Nome da iniciativa']
+            .first()
+            .to_dict()
+        )
+        df_inic['Nome da iniciativa'] = df_inic['_chave_norm'].map(mapa_canonico)
+        df_inic = df_inic.drop(columns=['_chave_norm'])
     
     # Deduplicação segura: garante a não-duplicidade pelo código de referência.
     if not df_cat.empty and 'Código de referência' in df_cat.columns:
@@ -884,7 +932,7 @@ with aba_inventario:
     }
 
     descricoes_planilhas = {
-        "BR-SPAPESP_CPOS.xlsx": {
+        "BR-SPAPESP_CPOS-PLNCARANDIRU.xlsx": {
             "Português": (
                 "Inventário das plantas estruturais da Companhia Paulista de "
                 "Obras e Serviços (CPOS) referentes à Casa de Detenção. Base "
@@ -904,7 +952,7 @@ with aba_inventario:
                 "autorización del APESP para futuras bases de datos."
             ),
         },
-        "BR-SPAPESP_DASP.xlsx": {
+        "BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU.xlsx": {
             "Português": (
                 "Inventário de documentos e fotografias do fundo Diários "
                 "Associados (DASP) sobre penitenciárias e a Casa de Detenção. "
@@ -923,7 +971,7 @@ with aba_inventario:
                 "de datos."
             ),
         },
-        "BR-SPGPDVE_ARCOENGE.xlsx": {
+        "BR-SPCARANDIRU_ARCOENGE-DEMOLICAO-CSDTCARANDIRU.xlsx": {
             "Português": (
                 "Inventário do acervo Arcoenge sobre a demolição e implosão "
                 "dos pavilhões 2, 5, 6, 8 e 9. Inclui clippings de repercussão "
@@ -943,7 +991,7 @@ with aba_inventario:
                 "publicación en el Dataverse de la FGV."
             ),
         },
-        "BR-SPGPDVE_ARCOENGE-NOTDEMOLI.xlsx": {
+        "BR-SPCARANDIRU_ARCOENGE-NOTDEMOLI-CSDTCARANDIRU.xlsx": {
             "Português": (
                 "Subconjunto de notícias/clippings sobre a demolição e "
                 "implosão no acervo Arcoenge. Complementa a base Arcoenge com "
@@ -960,7 +1008,7 @@ with aba_inventario:
                 "Arcoenge con la repercusión mediática del proceso."
             ),
         },
-        "BR-SPGPDVE_FILMES-CSDTCARANDIRU.xlsx": {
+        "BR-SPCARANDIRU_FILMES-CSDTCARANDIRU.xlsx": {
             "Português": (
                 "Inventário de produções audiovisuais sobre a Casa de "
                 "Detenção/Carandiru. Inclui a Penitenciária do Estado em 1928 "
@@ -979,7 +1027,7 @@ with aba_inventario:
                 "(2002)."
             ),
         },
-        "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
+        "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
             "Português": (
                 "Mapeamento de rememorações e notícias sobre o massacre da "
                 "Penha (RJ, 2025). Base em progresso no eixo Direito e "
@@ -996,7 +1044,7 @@ with aba_inventario:
                 "Violencia de Estado."
             ),
         },
-        "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
+        "BR-SPCARANDIRU_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
             "Português": (
                 "Mapeamento de rememorações do massacre do Carandiru (1992). "
                 "Base em progresso, vinculada à série Mapeamento de "
@@ -1013,7 +1061,7 @@ with aba_inventario:
                 "rememoraciones."
             ),
         },
-        "BR-SPGPDVE_NOTICIAS-MASSACRE-CSDTCARANDIRU.xlsx": {
+        "BR-SPCARANDIRU_ARCOENGE-MASSACRE-CSDTCARANDIRU.xlsx": {
             "Português": (
                 "Inventário de notícias e documentos sobre o massacre do "
                 "Carandiru. Inclui processo criminal e laudos de lesão "
@@ -1105,10 +1153,12 @@ with aba_inventario:
             ),
             axis=1,
         )
-        padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
-        mask = df_filtrado["NORMAL_BUSCA"].str.contains(
-            padrao, regex=True, na=False
-        )
+        partes_termo = [p for p in termo_stem.split() if p]
+        mask = pd.Series(True, index=df_filtrado.index)
+        for p in partes_termo:
+            mask &= df_filtrado["NORMAL_BUSCA"].str.contains(
+                rf"\b{p}\b", regex=True, na=False
+            )
         df_filtrado = df_filtrado[mask].drop(columns=["NORMAL_BUSCA"])
 
     st.subheader(traduzir("Filtros categoriais"))
@@ -1474,10 +1524,11 @@ with aba_iniciativas:
             termo_norm = normalizar_texto(termo_inic, stemmer)
             partes_termo = [p for p in termo_norm.split() if p]
             if partes_termo:
-                padrao = r"\b" + r"\b|\b".join(partes_termo) + r"\b"
-                mask_i = df_inic_filtrado["NORMAL_BUSCA"].str.contains(
-                    padrao, regex=True, na=False
-                )
+                mask_i = pd.Series(True, index=df_inic_filtrado.index)
+                for p in partes_termo:
+                    mask_i &= df_inic_filtrado["NORMAL_BUSCA"].str.contains(
+                        rf"\b{p}\b", regex=True, na=False
+                    )
                 df_inic_filtrado = df_inic_filtrado[mask_i].drop(
                     columns=["NORMAL_BUSCA"]
                 )
@@ -1491,6 +1542,10 @@ with aba_iniciativas:
             "Modalidade",
         ]
         cols_exist_inic = [c for c in cols_int_inic if c in df_iniciativas.columns]
+
+        ARQUIVO_PENHA = (
+            "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx"
+        )
 
         filtros_sel_inic = {}
         if cols_exist_inic and not df_inic_filtrado.empty:
@@ -1512,14 +1567,39 @@ with aba_iniciativas:
                             str(v).strip()
                             for v in df_opcoes_inic[col].dropna().unique()
                             if str(v).strip() and "Unnamed" not in str(v)
-                        ]
+                        ],
+                        key=chave_ordenacao_alfabetica,
                     )
+
+                    # Marca as opções que só aparecem na planilha da Penha
+                    mapa_lbl = {}
+                    if 'Arquivo_origem' in df_iniciativas.columns:
+                        for v in valores_inic:
+                            ors = df_iniciativas.loc[
+                                df_iniciativas[col].astype(str).str.strip() == v,
+                                'Arquivo_origem',
+                            ].dropna().unique()
+                            if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
+                                mapa_lbl[v] = f"{v} (Massacre da Penha)"
+                            else:
+                                mapa_lbl[v] = v
+
+                    ajuda = (
+                        "Este campo é apenas o detalhamento do campo "
+                        '"Abrangência".'
+                        if col == "Modalidade"
+                        else None
+                    )
+
                     filtros_sel_inic[col] = st.multiselect(
                         traduzir(col),
                         valores_inic,
                         key=f"fi_{col}",
+                        format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
+                        help=ajuda,
                     )
 
+                    
         for col, sel in filtros_sel_inic.items():
             if sel:
                 df_inic_filtrado = df_inic_filtrado[
@@ -1535,7 +1615,7 @@ with aba_iniciativas:
         st.subheader(traduzir("Análises e visualizações do acervo"))
         op_limpar_i = traduzir("Nenhuma visualização (limpar tela)")
         op_timeline_i = traduzir("Linha do tempo (distribuição cronológica)")
-        op_nuvem_i = traduzir("Nuvem de palavras (Nome da iniciativa)")
+        op_nuvem_i = traduzir("Nuvem de palavras")
 
         vis_inic = st.selectbox(
             traduzir("Escolha uma visualização ou eixo temático:"),
@@ -1590,59 +1670,83 @@ with aba_iniciativas:
                     st.plotly_chart(fig_linha_inic, use_container_width=True)
 
         elif vis_inic == op_nuvem_i and not df_inic_filtrado.empty:
-            textos_inic = []
-            for c in [
-                "Nome da iniciativa",
-                "Intervenção",
-                "Abrangência",
-                "Modalidade",
-                "Proponente",
-            ]:
-                if c in df_inic_filtrado.columns:
+            colunas_disponiveis = [
+                c for c in [
+                    "Nome da iniciativa",
+                    "Ano",
+                    "Proponente",
+                    "Link / Fonte",
+                    "Intervenção",
+                    "Abrangência",
+                    "Modalidade",
+                ]
+                if c in df_inic_filtrado.columns
+            ]
+
+            cols_escolhidas = st.multiselect(
+                traduzir(
+                    "O que deve conter? Selecione as colunas para gerar "
+                    "a nuvem:"
+                ),
+                colunas_disponiveis,
+                default=colunas_disponiveis,
+                key="cols_nuvem_inic",
+            )
+
+            if not cols_escolhidas:
+                st.info(
+                    traduzir(
+                        "Selecione ao menos uma coluna para gerar a nuvem."
+                    )
+                )
+            else:
+                textos_inic = []
+                for c in cols_escolhidas:
                     textos_inic += (
                         df_inic_filtrado[c].dropna().astype(str).tolist()
                     )
-            texto_completo_inic = " ".join(textos_inic).strip()
+                texto_completo_inic = " ".join(textos_inic).strip()
 
-            stopwords_i = set(
-                [
-                    "de", "a", "o", "que", "e", "do", "da", "em", "um",
-                    "para", "com", "não", "uma", "os", "no", "se", "na",
-                    "por", "mais", "as", "dos", "como", "mas", "ao", "ele",
-                    "das", "à", "seu", "sua", "ou", "quando", "muito", "nos",
-                    "já", "eu", "também", "só", "pelo", "pela", "até", "isso",
-                    "ela", "entre", "depois", "sem", "mesmo", "aos", "seus",
-                    "quem", "nas", "me", "esse", "eles", "você", "essa",
-                    "num", "nem", "suas", "meu", "às", "minha", "numa",
-                    "pelos", "elas", "qual", "nós", "lhe", "deles", "essas",
-                    "esses", "pelas", "este", "dele", "tu", "te", "vocês",
-                    "vos", "lhes", "meus", "minhas", "teu", "tua", "teus",
-                    "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
-                ]
-            )
-            try:
-                wc_inic = WordCloud(
-                    width=800,
-                    height=400,
-                    background_color="rgba(0,0,0,0)",
-                    mode="RGBA",
-                    colormap="viridis",
-                    stopwords=stopwords_i,
-                    max_words=100,
-                ).generate(texto_completo_inic)
-                fig_i, ax_i = plt.subplots(figsize=(10, 5))
-                ax_i.imshow(wc_inic, interpolation="bilinear")
-                ax_i.axis("off")
-                fig_i.patch.set_alpha(0)
-                st.pyplot(fig_i)
-            except ValueError:
-                st.warning(
-                    traduzir(
-                        "Não há vocabulário útil suficiente nos itens "
-                        "filtrados para gerar a nuvem de palavras. Tente "
-                        "remover alguns filtros."
-                    )
+                stopwords_i = set(
+                    [
+                        "de", "a", "o", "que", "e", "do", "da", "em", "um",
+                        "para", "com", "não", "uma", "os", "no", "se", "na",
+                        "por", "mais", "as", "dos", "como", "mas", "ao",
+                        "ele", "das", "à", "seu", "sua", "ou", "quando",
+                        "muito", "nos", "já", "eu", "também", "só", "pelo",
+                        "pela", "até", "isso", "ela", "entre", "depois",
+                        "sem", "mesmo", "aos", "seus", "quem", "nas", "me",
+                        "esse", "eles", "você", "essa", "num", "nem", "suas",
+                        "meu", "às", "minha", "numa", "pelos", "elas",
+                        "qual", "nós", "lhe", "deles", "essas", "esses",
+                        "pelas", "este", "dele", "tu", "te", "vocês", "vos",
+                        "lhes", "meus", "minhas", "teu", "tua", "teus",
+                        "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
+                    ]
                 )
+                try:
+                    wc_inic = WordCloud(
+                        width=800,
+                        height=400,
+                        background_color="rgba(0,0,0,0)",
+                        mode="RGBA",
+                        colormap="viridis",
+                        stopwords=stopwords_i,
+                        max_words=100,
+                    ).generate(texto_completo_inic)
+                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                    ax_i.imshow(wc_inic, interpolation="bilinear")
+                    ax_i.axis("off")
+                    fig_i.patch.set_alpha(0)
+                    st.pyplot(fig_i)
+                except ValueError:
+                    st.warning(
+                        traduzir(
+                            "Não há vocabulário útil suficiente nos itens "
+                            "filtrados para gerar a nuvem de palavras. Tente "
+                            "remover alguns filtros."
+                        )
+                    )
 
         st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
 
@@ -1702,17 +1806,17 @@ html_arvore = """
 <details>
 <summary>Subsérie: Criar, construir, inaugurar (1952-1978)</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada (seleção).</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</summary>
 <div class="item-simples"><span class="status-badge bg-vermelho">🔴 Pronta, mas aguardando autorização para uso em futuras bases de dados.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Penitenciárias e presídios — Casa de Detenção de São Paulo no Carandiru (jornal Diários Associados do Estado de São Paulo — DASP)</summary>
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU.xlsx</span></div>
 </details>
 </details>
 
@@ -1729,7 +1833,7 @@ html_arvore = """
 <details>
 <summary>Subsérie: Demolição e implosão dos pavilhões 2, 5, 6, 8 e 9 da Casa de Detenção e clippings de repercussão midiática</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-DEMOLICAO-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_ARCOENGE-DEMOLICAO-CSDTCARANDIRU.xlsx</span></div>
 </details>
 </details>
 
@@ -1738,7 +1842,7 @@ html_arvore = """
 <details>
 <summary>Subsérie: Rememorações do massacre do Carandiru (1992)</summary>
 <div class="item-simples"><span class="status-badge bg-verde">🟢 Pronta, autorizada e em processo de publicação no Dataverse da FGV.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx</span></div>
 </details>
 </details>
 
@@ -1747,17 +1851,17 @@ html_arvore = """
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
 <div class="item-simples"><span class="status-badge bg-amarelo">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_FILMES-CSDTCARANDIRU.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Extras do filme Carandiru, por Hector Babenco (2002)</summary>
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_FILMES-CSDTCARANDIRU.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Notícias do Massacre do Carandiru (2002)</summary>
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-NOTDEMOLI-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_ARCOENGE-NOTDEMOLI-CSDTCARANDIRU.xlsx</span></div>
 </details>
 </details>
 
@@ -1773,7 +1877,7 @@ html_arvore = """
 <details>
 <summary>Subsérie: Rememorações e notícias do massacre da Penha no Rio de Janeiro (2025)</summary>
 <div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso (fase final).</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx</span></div>
 </details>
 </details>
 
