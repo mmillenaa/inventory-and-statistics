@@ -1585,7 +1585,7 @@ with aba_iniciativas:
                                 mapa_lbl[v] = v
 
                     ajuda = (
-                        "Este campo é apenas o detalhamento do campo "
+                        "O campo Modalidade é apenas o detalhamento do campo "
                         '"Abrangência".'
                         if col == "Modalidade"
                         else None
