@@ -148,12 +148,12 @@ def traduzir(texto_pt):
             "English": "Undetermined (NDT)",
             "Español": "No determinado (NDT)",
         },
-        "Inventário e estatística de coleções em Direito e Violência de Estado": {
+        "Inventário e estatísticas de coleções em Direito e Violência de Estado": {
             "English": (
                 "Inventory and statistics of collections about Law and state violence"
             ),
             "Español": (
-                "Inventario y estadística de las colecciones en derecho "
+                "Inventario y estadísticas de las colecciones en derecho "
                 "y violencia de estado"
             ),
         },
@@ -841,7 +841,7 @@ def extrair_equipe_fgv():
 # ============================================================
 st.title(
     traduzir(
-        "Inventário e estatística de coleções em Direito e Violência de Estado"
+        "Inventário e estatísticas de coleções em Direito e Violência de Estado"
     )
 )
 st.markdown(traduzir("Gestão e visualização transversal de metadados arquivísticos."))
