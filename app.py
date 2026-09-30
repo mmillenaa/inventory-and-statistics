@@ -1838,6 +1838,13 @@ with aba_iniciativas:
                     )
                 )
             else:
+                textos_inic = []
+                for c in cols_escolhidas:
+                    textos_inic += (
+                        df_inic_filtrado[c].dropna().astype(str).tolist()
+                    )
+                texto_completo_inic = " ".join(textos_inic).strip()
+
                 stopwords_i = set(
                     [
                         "de", "a", "o", "que", "e", "do", "da", "em", "um",
@@ -1855,39 +1862,22 @@ with aba_iniciativas:
                         "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
                     ]
                 )
-
-                contador = Counter()
-                for c in cols_escolhidas:
-                    for texto in df_inic_filtrado[c].dropna().astype(str):
-                        s = texto.strip()
-                        if not s or s.lower() in (
-                            "nan", "none", "null", "na", "n/a"
-                        ):
-                            continue
-                        # O limite de um termo é a vírgula (não o espaço)
-                        partes = re.split(r"[,;\n\r]+", s)
-                        for parte in partes:
-                            frase = re.sub(r"\s+", " ", parte).strip(" .-")
-                            if not frase:
-                                continue
-                            if frase.lower() in (
-                                "nan", "none", "null", "na", "n/a"
-                            ):
-                                continue
-                            # Descarta frases onde TODAS as palavras são
-                            # stopwords
-                            palavras = [p for p in frase.split() if p]
-                            uteis = [
-                                p for p in palavras
-                                if p.strip(".,;:!?()[]\"'").lower()
-                                not in stopwords_i
-                            ]
-                            if not uteis:
-                                continue
-                            # Anos e números também contam como termo útil
-                            contador[frase] += 1
-
-                if not contador:
+                try:
+                    wc_inic = WordCloud(
+                        width=800,
+                        height=400,
+                        background_color="rgba(0,0,0,0)",
+                        mode="RGBA",
+                        colormap="viridis",
+                        stopwords=stopwords_i,
+                        max_words=100,
+                    ).generate(texto_completo_inic)
+                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                    ax_i.imshow(wc_inic, interpolation="bilinear")
+                    ax_i.axis("off")
+                    fig_i.patch.set_alpha(0)
+                    st.pyplot(fig_i)
+                except ValueError:
                     st.warning(
                         traduzir(
                             "Não há vocabulário útil suficiente nos itens "
@@ -1895,21 +1885,8 @@ with aba_iniciativas:
                             "remover alguns filtros."
                         )
                     )
-                else:
-                    wc_inic = WordCloud(
-                        width=800,
-                        height=400,
-                        background_color="rgba(0,0,0,0)",
-                        mode="RGBA",
-                        colormap="viridis",
-                        max_words=100,
-                        collocations=False,
-                    ).generate_from_frequencies(dict(contador))
-                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
-                    ax_i.imshow(wc_inic, interpolation="bilinear")
-                    ax_i.axis("off")
-                    fig_i.patch.set_alpha(0)
-                    st.pyplot(fig_i)
+
+        st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
 
 # ============================================================
 # ABA 3: VISÃO GERAL DO ACERVO
