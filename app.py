@@ -15,6 +15,16 @@ from bs4 import BeautifulSoup
 from nltk.stem import RSLPStemmer
 from wordcloud import WordCloud
 
+from vocabulario_controlado import (
+    DICT_ESPECIE,
+    DICT_FORMA,
+    DICT_GENERO,
+    DICT_TECNICA,
+    descrever_sigla,
+    rotular_sigla,
+    rotulo_curto_sigla,
+)
+
 
 # ============================================================
 # RECURSOS CACHEADOS E FUNÇÕES UTILITÁRIAS
@@ -1185,21 +1195,15 @@ with aba_inventario:
     ]
     cols_exist = [c for c in cols_int if c in df_consolidado.columns]
 
-    dicionario_siglas = {
-        "FOT": traduzir("Fotografia (FOT)"),
-        "PLN": traduzir("Planta cartográfica (PLN)"),
-        "DGZ": traduzir("Digitalizado (DGZ)"),
-        "ICO": traduzir("Iconográfico (ICO)"),
-        "MTO": traduzir("Meio magnético/ótico (MTO)"),
-        "TXT": traduzir("Textual (TXT)"),
-        "AVS": traduzir("Audiovisual (AVS)"),
-        "FLG": traduzir("Filmográfico (FLG)"),
-        "FME": traduzir("Filme (FME)"),
-        "NOT": traduzir("Notícia (NOT)"),
-        "REL": traduzir("Relatório (REL)"),
-        "NDG": traduzir("Nato-digital (NDG)"),
-        "NDT": traduzir("Não determinado (NDT)"),
+    TIPOS_SIGLA = {
+        "Gênero documental": "genero",
+        "Espécie/Tipo documental": "especie",
+        "Técnica de registro": "tecnica",
+        "Forma documental": "forma",
     }
+
+    def _rotular(valor, coluna=None):
+        return rotulo_curto_sigla(valor, tipo=TIPOS_SIGLA.get(coluna))
 
     filtros_selecionados = {}
     if cols_exist and not df_filtrado.empty:
@@ -1223,9 +1227,9 @@ with aba_inventario:
 
                 filtros_selecionados[col] = st.multiselect(
                     traduzir(col),
-                    sorted(valores),
+                    sorted(valores, key=chave_ordenacao_alfabetica),
                     key=f"f_{col}",
-                    format_func=lambda x: dicionario_siglas.get(str(x), str(x)),
+                    format_func=lambda x, _c=col: _rotular(x, _c) or str(x),
                 )
 
     for col, sel in filtros_selecionados.items():
@@ -1576,10 +1580,9 @@ with aba_iniciativas:
             mask = pd.Series(False, index=serie_valor.index)
             for v in selecionados:
                 if v == OPCAO_TODAS_CARANDIRU:
-                    sub = (
-                        serie_valor.isin(INDIVIDUAIS_CARANDIRU)
-                        & (serie_arquivo == ARQUIVO_CARANDIRU)
-                    )
+                    # "Todas" = todas as linhas do Carandiru,
+                    # independentemente de terem Intervenção preenchida.
+                    sub = serie_arquivo == ARQUIVO_CARANDIRU
                 elif v.endswith(SUFIXO_PENHA):
                     base = v[: -len(SUFIXO_PENHA)]
                     sub = (
