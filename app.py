@@ -148,12 +148,12 @@ def traduzir(texto_pt):
             "English": "Undetermined (NDT)",
             "Español": "No determinado (NDT)",
         },
-        "Inventário e estatística de coleções em Direito e Violência de Estado": {
+        "Inventário e estatísticas de coleções em Direito e Violência de Estado": {
             "English": (
                 "Inventory and statistics of collections about Law and state violence"
             ),
             "Español": (
-                "Inventario y estadística de las colecciones en derecho "
+                "Inventario y estadísticas de las colecciones en derecho "
                 "y violencia de estado"
             ),
         },
@@ -169,9 +169,9 @@ def traduzir(texto_pt):
             "English": "Catalogued collection inventory",
             "Español": "Inventario del acervo catalogado",
         },
-        "Iniciativas (Mapeamentos)": {
-            "English": "Initiatives (Mappings)",
-            "Español": "Iniciativas (Mapeos)",
+        "Rememorações e Notícias": {
+            "English": "Remembrances and News",
+            "Español": "Rememoraciones y Noticias",
         },
         "Visão geral do acervo": {
             "English": "Collection overview",
@@ -404,6 +404,40 @@ def traduzir(texto_pt):
             "English": "No description registered for:",
             "Español": "Sin descripción registrada para:",
         },
+                "Rememorações e Notícias": {
+            "English": "Remembrances and News",
+            "Español": "Rememoraciones y Noticias",
+        },
+        "Nome da iniciativa": {
+            "English": "Initiative name",
+            "Español": "Nombre de la iniciativa",
+        },
+        "Abrangência": {"English": "Reach", "Español": "Alcance"},
+        "Modalidade": {"English": "Modality", "Español": "Modalidad"},
+        "Intervenção": {"English": "Intervention", "Español": "Intervención"},
+        "Ano": {"English": "Year", "Español": "Año"},
+        "Proponente": {"English": "Proponent", "Español": "Proponente"},
+        "Link / Fonte": {"English": "Link / Source", "Español": "Enlace / Fuente"},
+        "Pesquisar termo nas iniciativas (ex: podcast, exposição, filme)": {
+            "English": "Search term in initiatives (e.g., podcast, exhibition, film)",
+            "Español": "Buscar término en iniciativas (ej: podcast, exposición, película)",
+        },
+        "Selecione as planilhas de rememorações para integrar:": {
+            "English": "Select the remembrances spreadsheets to integrate:",
+            "Español": "Seleccione las hojas de rememoraciones a integrar:",
+        },
+        "Nuvem de palavras (Nome da iniciativa)": {
+            "English": "Word cloud (initiative name)",
+            "Español": "Nube de palabras (nombre de la iniciativa)",
+        },
+        "Nenhuma planilha de MAPEAMENTOS encontrada.": {
+            "English": "No MAPEAMENTOS spreadsheet found.",
+            "Español": "No se encontró ninguna hoja de MAPEAMENTOS.",
+        },
+        "Frequência de datas grafadas nas iniciativas": {
+            "English": "Frequency of dates written in initiatives",
+            "Español": "Frecuencia de fechas escritas en las iniciativas",
+        },        
     }
 
     if idioma == "Português" or texto_pt not in dicionario:
@@ -612,21 +646,25 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     })
             
             elif tipo_aba == 'iniciativas':
-                c_tit = get_col('titulo', 'iniciativa')
+                c_tit = get_col('nome da iniciativa', 'titulo', 'iniciativa')
                 c_int = get_col('intervencao', 'finalidade')
+                c_abr = get_col('abrangencia')
+                c_mod = get_col('modalidade')
                 c_ano = get_col('ano', 'data')
                 c_prop = get_col('proponente')
                 c_link = get_col('link', 'fonte')
-                
+
                 for _, r in df.iterrows():
                     t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
                     if not t or t.lower() in ('nan', 'none'):
                         continue
-                        
+
                     linhas_iniciativas.append({
                         'Arquivo_origem': nome_arq,
-                        'Iniciativa / Título': t,
+                        'Nome da iniciativa': t,
                         'Intervenção': str(r[c_int]).strip() if c_int and pd.notna(r[c_int]) else '',
+                        'Abrangência': str(r[c_abr]).strip() if c_abr and pd.notna(r[c_abr]) else '',
+                        'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
                         'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
                         'Proponente': str(r[c_prop]).strip() if c_prop and pd.notna(r[c_prop]) else '',
                         'Link / Fonte': str(r[c_link]).strip() if c_link and pd.notna(r[c_link]) else '',
@@ -803,7 +841,7 @@ def extrair_equipe_fgv():
 # ============================================================
 st.title(
     traduzir(
-        "Inventário e estatística de coleções em Direito e Violência de Estado"
+        "Inventário e estatísticas de coleções em Direito e Violência de Estado"
     )
 )
 st.markdown(traduzir("Gestão e visualização transversal de metadados arquivísticos."))
@@ -823,7 +861,7 @@ st.caption(
 aba_inventario, aba_iniciativas, aba_producao, aba_equipe = st.tabs(
     [
         traduzir("Inventário do acervo catalogado"),
-        traduzir("Iniciativas (Mapeamentos)"),
+        traduzir("Rememorações e Notícias"),
         traduzir("Visão geral do acervo"),
         traduzir("Equipe e observatório"),
     ]
@@ -998,7 +1036,9 @@ with aba_inventario:
 
     pasta_acervo = "."
     arquivos = [
-        f for f in os.listdir(pasta_acervo) if f.lower().endswith((".xlsx", ".xls"))
+        f for f in os.listdir(pasta_acervo)
+        if f.lower().endswith((".xlsx", ".xls"))
+        and "MAPEAMENTOS" not in f.upper()
     ]
     if not arquivos:
         st.warning(traduzir("Nenhum arquivo Excel encontrado na pasta do sistema."))
@@ -1047,8 +1087,7 @@ with aba_inventario:
         st.stop()
 
     # Usando a nova função que retorna as duas bases separadas
-    df_consolidado, df_iniciativas = carregar_e_cruzar_dados(selecionados, pasta_acervo)
-
+    df_consolidado, _ = carregar_e_cruzar_dados(selecionados, pasta_acervo)
     st.subheader(traduzir("Busca avançada"))
     termo = st.text_input(
         traduzir("Pesquisar termo nas planilhas (ex: criança, portão, costura)")
@@ -1327,53 +1366,285 @@ with aba_inventario:
 # ABA 2: INICIATIVAS (MAPEAMENTOS)
 # ============================================================
 with aba_iniciativas:
-    
-    if 'df_iniciativas' not in locals() or df_iniciativas.empty:
-        st.info(traduzir("Nenhuma iniciativa carregada. Selecione planilhas de MAPEAMENTOS."))
+    pasta_acervo_inic = "."
+    arquivos_inic = [
+        f for f in os.listdir(pasta_acervo_inic)
+        if f.lower().endswith((".xlsx", ".xls"))
+        and "MAPEAMENTOS" in f.upper()
+    ]
+
+    if not arquivos_inic:
+        st.info(traduzir("Nenhuma planilha de MAPEAMENTOS encontrada."))
     else:
-        termo_inic = st.text_input(traduzir("Pesquisar nas iniciativas..."), key="busca_inic")
+        # Descrições das planilhas de rememoração/notícia
+        descricoes_inic = {
+            "BR-SPGPDVE_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx": {
+                "Português": (
+                    "Mapeamento de rememorações e notícias sobre o massacre "
+                    "da Penha (RJ, 2025). Base em progresso no eixo Direito "
+                    "e Violência de Estado."
+                ),
+                "English": (
+                    "Mapping of remembrances and news about the Penha "
+                    "massacre (Rio de Janeiro, 2025). Dataset in progress "
+                    "under the Law and State Violence axis."
+                ),
+                "Español": (
+                    "Mapeo de rememoraciones y noticias sobre la masacre de "
+                    "la Penha (RJ, 2025). Base en progreso en el eje Derecho "
+                    "y Violencia de Estado."
+                ),
+            },
+            "BR-SPGPDVE_MAPEAMENTOS-REMEMORA-CARANDIRU.xlsx": {
+                "Português": (
+                    "Mapeamento de rememorações do massacre do Carandiru "
+                    "(1992). Base em progresso, vinculada à série Mapeamento "
+                    "de rememorações."
+                ),
+                "English": (
+                    "Mapping of remembrances of the Carandiru massacre "
+                    "(1992). Dataset in progress, linked to the Mapping of "
+                    "Remembrances series."
+                ),
+                "Español": (
+                    "Mapeo de rememoraciones de la masacre del Carandiru "
+                    "(1992). Base en progreso, vinculada a la serie Mapeo "
+                    "de rememoraciones."
+                ),
+            },
+        }
+        descricoes_inic_norm = {
+            norm_nome_arquivo(k): v for k, v in descricoes_inic.items()
+        }
+
+        sel_inic = st.multiselect(
+            traduzir("Selecione as planilhas de rememorações para integrar:"),
+            arquivos_inic,
+            default=arquivos_inic,
+            key="sel_inic",
+        )
+
+        if sel_inic:
+            partes_i = []
+            for arq in sel_inic:
+                trads = descricoes_inic.get(arq) or descricoes_inic_norm.get(
+                    norm_nome_arquivo(arq)
+                )
+                if not trads:
+                    alvo = norm_nome_arquivo(arq)
+                    for k_norm, v in descricoes_inic_norm.items():
+                        if alvo and (alvo in k_norm or k_norm in alvo):
+                            trads = v
+                            break
+                if not trads:
+                    continue
+                desc = trads.get(idioma) or trads.get("Português") or ""
+                partes_i.append(
+                    f"<span class='desc-nome'>{arq}</span>: {desc}"
+                )
+            if partes_i:
+                st.markdown(
+                    f"<div class='desc-lista'>{' '.join(partes_i)}</div>",
+                    unsafe_allow_html=True,
+                )
+
+        if not sel_inic:
+            st.stop()
+
+        _, df_iniciativas = carregar_e_cruzar_dados(sel_inic, pasta_acervo_inic)
+
+        # -------- Busca avançada --------
+        st.subheader(traduzir("Busca avançada"))
+        termo_inic = st.text_input(
+            traduzir(
+                "Pesquisar termo nas iniciativas (ex: podcast, exposição, filme)"
+            ),
+            key="busca_inic_avancada",
+        )
         df_inic_filtrado = df_iniciativas.copy()
-        
-        if termo_inic:
-            mask_inic = df_inic_filtrado.astype(str).apply(
-                lambda x: x.str.contains(termo_inic, case=False, na=False)
-            ).any(axis=1)
-            df_inic_filtrado = df_inic_filtrado[mask_inic]
-            
-        st.metric(traduzir("Total de iniciativas mapeadas"), len(df_inic_filtrado))
-        
-        if "Ano" in df_inic_filtrado.columns:
-            df_inic_datas = df_inic_filtrado.copy()
-            df_inic_datas["Ano_Limpo"] = df_inic_datas["Ano"].astype(str).str.extract(r"((?:19|20)\d{2})")
-            df_inic_anos = df_inic_datas.dropna(subset=["Ano_Limpo"])
-            
-            if not df_inic_anos.empty:
-                contagem_anos_inic = df_inic_anos["Ano_Limpo"].value_counts().reset_index()
-                contagem_anos_inic.columns = ["Ano", "Frequência"]
-                fig_linha_inic = px.line(
-                    contagem_anos_inic.sort_values(by="Ano"), 
-                    x="Ano", 
-                    y="Frequência", 
-                    markers=True, 
-                    color_discrete_sequence=["#7BC6CC"]
+
+        if termo_inic and not df_inic_filtrado.empty:
+            stemmer = get_stemmer()
+            df_inic_filtrado["NORMAL_BUSCA"] = df_inic_filtrado.apply(
+                lambda row: normalizar_texto(
+                    " ".join(row.dropna().astype(str)), stemmer
+                ),
+                axis=1,
+            )
+            termo_norm = normalizar_texto(termo_inic, stemmer)
+            partes_termo = [p for p in termo_norm.split() if p]
+            if partes_termo:
+                padrao = r"\b" + r"\b|\b".join(partes_termo) + r"\b"
+                mask_i = df_inic_filtrado["NORMAL_BUSCA"].str.contains(
+                    padrao, regex=True, na=False
                 )
-                fig_linha_inic.update_layout(
-                    template="plotly_dark", 
-                    font=dict(family="Source Serif 4, serif", size=15),
-                    title=dict(
-                        text=traduzir("Linha do Tempo das Iniciativas"), 
-                        font=dict(family="Cormorant Garamond, serif", size=24)
-                    ), 
-                    paper_bgcolor="rgba(0,0,0,0)", 
-                    plot_bgcolor="rgba(0,0,0,0)", 
-                    xaxis=dict(title="", showgrid=False), 
-                    yaxis=dict(title=traduzir("Volume documental"), gridcolor="rgba(120,120,120,0.15)")
+                df_inic_filtrado = df_inic_filtrado[mask_i].drop(
+                    columns=["NORMAL_BUSCA"]
                 )
-                fig_linha_inic.update_traces(line=dict(width=3), marker=dict(size=8))
-                st.plotly_chart(fig_linha_inic, use_container_width=True)
+
+        # -------- Filtros categoriais (Vocabulário Controlado) --------
+        st.subheader(traduzir("Filtros categoriais"))
+        cols_int_inic = [
+            "Nome da iniciativa",
+            "Intervenção",
+            "Abrangência",
+            "Modalidade",
+        ]
+        cols_exist_inic = [c for c in cols_int_inic if c in df_iniciativas.columns]
+
+        filtros_sel_inic = {}
+        if cols_exist_inic and not df_inic_filtrado.empty:
+            l_cols_inic = st.columns(len(cols_exist_inic))
+            selecoes_ativas_inic = {
+                c: st.session_state.get(f"fi_{c}", []) for c in cols_exist_inic
+            }
+
+            for i, col in enumerate(cols_exist_inic):
+                with l_cols_inic[i]:
+                    df_opcoes_inic = df_iniciativas.copy()
+                    for o_col, sel_vals in selecoes_ativas_inic.items():
+                        if o_col != col and sel_vals:
+                            df_opcoes_inic = df_opcoes_inic[
+                                df_opcoes_inic[o_col].isin(sel_vals)
+                            ]
+                    valores_inic = sorted(
+                        [
+                            str(v).strip()
+                            for v in df_opcoes_inic[col].dropna().unique()
+                            if str(v).strip() and "Unnamed" not in str(v)
+                        ]
+                    )
+                    filtros_sel_inic[col] = st.multiselect(
+                        traduzir(col),
+                        valores_inic,
+                        key=f"fi_{col}",
+                    )
+
+        for col, sel in filtros_sel_inic.items():
+            if sel:
+                df_inic_filtrado = df_inic_filtrado[
+                    df_inic_filtrado[col].isin(sel)
+                ]
+
+        # -------- Métrica --------
+        st.metric(
+            traduzir("Total de iniciativas mapeadas"), len(df_inic_filtrado)
+        )
+
+        # -------- Visualizações --------
+        st.subheader(traduzir("Análises e visualizações do acervo"))
+        op_limpar_i = traduzir("Nenhuma visualização (limpar tela)")
+        op_timeline_i = traduzir("Linha do tempo (distribuição cronológica)")
+        op_nuvem_i = traduzir("Nuvem de palavras (Nome da iniciativa)")
+
+        vis_inic = st.selectbox(
+            traduzir("Escolha uma visualização ou eixo temático:"),
+            [op_limpar_i, op_timeline_i, op_nuvem_i],
+            index=1,
+            key="vis_inic",
+        )
+
+        if vis_inic == op_timeline_i and not df_inic_filtrado.empty:
+            if "Ano" in df_inic_filtrado.columns:
+                df_inic_datas = df_inic_filtrado.copy()
+                df_inic_datas["Ano_Limpo"] = (
+                    df_inic_datas["Ano"]
+                    .astype(str)
+                    .str.extract(r"((?:18|19|20)\d{2})")
+                )
+                df_inic_anos = df_inic_datas.dropna(subset=["Ano_Limpo"])
+                if not df_inic_anos.empty:
+                    contagem_anos_inic = (
+                        df_inic_anos["Ano_Limpo"].value_counts().reset_index()
+                    )
+                    contagem_anos_inic.columns = ["Ano", "Frequência"]
+                    fig_linha_inic = px.line(
+                        contagem_anos_inic.sort_values(by="Ano"),
+                        x="Ano",
+                        y="Frequência",
+                        markers=True,
+                        color_discrete_sequence=["#7BC6CC"],
+                    )
+                    fig_linha_inic.update_layout(
+                        template="plotly_dark",
+                        font=dict(family="Source Serif 4, serif", size=15),
+                        title=dict(
+                            text=traduzir(
+                                "Frequência de datas grafadas nas iniciativas"
+                            ),
+                            font=dict(
+                                family="Cormorant Garamond, serif", size=24
+                            ),
+                        ),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        xaxis=dict(title="", showgrid=False),
+                        yaxis=dict(
+                            title=traduzir("Volume documental"),
+                            gridcolor="rgba(120,120,120,0.15)",
+                        ),
+                    )
+                    fig_linha_inic.update_traces(
+                        line=dict(width=3), marker=dict(size=8)
+                    )
+                    st.plotly_chart(fig_linha_inic, use_container_width=True)
+
+        elif vis_inic == op_nuvem_i and not df_inic_filtrado.empty:
+            textos_inic = []
+            for c in [
+                "Nome da iniciativa",
+                "Intervenção",
+                "Abrangência",
+                "Modalidade",
+                "Proponente",
+            ]:
+                if c in df_inic_filtrado.columns:
+                    textos_inic += (
+                        df_inic_filtrado[c].dropna().astype(str).tolist()
+                    )
+            texto_completo_inic = " ".join(textos_inic).strip()
+
+            stopwords_i = set(
+                [
+                    "de", "a", "o", "que", "e", "do", "da", "em", "um",
+                    "para", "com", "não", "uma", "os", "no", "se", "na",
+                    "por", "mais", "as", "dos", "como", "mas", "ao", "ele",
+                    "das", "à", "seu", "sua", "ou", "quando", "muito", "nos",
+                    "já", "eu", "também", "só", "pelo", "pela", "até", "isso",
+                    "ela", "entre", "depois", "sem", "mesmo", "aos", "seus",
+                    "quem", "nas", "me", "esse", "eles", "você", "essa",
+                    "num", "nem", "suas", "meu", "às", "minha", "numa",
+                    "pelos", "elas", "qual", "nós", "lhe", "deles", "essas",
+                    "esses", "pelas", "este", "dele", "tu", "te", "vocês",
+                    "vos", "lhes", "meus", "minhas", "teu", "tua", "teus",
+                    "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
+                ]
+            )
+            try:
+                wc_inic = WordCloud(
+                    width=800,
+                    height=400,
+                    background_color="rgba(0,0,0,0)",
+                    mode="RGBA",
+                    colormap="viridis",
+                    stopwords=stopwords_i,
+                    max_words=100,
+                ).generate(texto_completo_inic)
+                fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                ax_i.imshow(wc_inic, interpolation="bilinear")
+                ax_i.axis("off")
+                fig_i.patch.set_alpha(0)
+                st.pyplot(fig_i)
+            except ValueError:
+                st.warning(
+                    traduzir(
+                        "Não há vocabulário útil suficiente nos itens "
+                        "filtrados para gerar a nuvem de palavras. Tente "
+                        "remover alguns filtros."
+                    )
+                )
 
         st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
-
 
 # ============================================================
 # ABA 3: VISÃO GERAL DO ACERVO
@@ -1386,8 +1657,31 @@ html_arvore = """
 .arvore-acervo summary { cursor: pointer; margin-bottom: 4px; outline: none; }
 .arvore-acervo summary:hover { color: #4ba3a6; }
 .item-simples { margin-left: 40px; margin-bottom: 4px; }
-.tag-azul { background-color: #2f6f8f; color: white; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; display: inline-block; margin-top: 2px; margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; }
-.sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
+.tag-azul {
+    background-color: rgba(25, 135, 84, 0.08);
+    color: #1e7e34;
+    border: 1px solid rgba(25, 135, 84, 0.22);
+    border-left: 3px solid #198754;
+    border-radius: 4px;
+    padding: 4px 10px 4px 26px;
+    font-size: 0.85rem;
+    display: inline-block;
+    margin-top: 2px;
+    margin-bottom: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    position: relative;
+}
+.tag-azul::before {
+    content: "▦";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #198754;
+    font-size: 0.85rem;
+    line-height: 1;
+    opacity: 0.85;
+}.sigla-codigo { font-family: 'IBM Plex Mono', monospace; color: #2F6F8F; font-weight: 600; font-size: 0.9em; background: rgba(47, 111, 143, 0.08); padding: 2px 5px; border-radius: 4px; }
 
 /* Estilos das Badges */
 .status-badge { font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; display: inline-block; font-weight: 500; margin-top: 4px; margin-bottom: 6px; line-height: 1.2; font-family: 'Source Serif 4', sans-serif; }
@@ -1407,8 +1701,8 @@ html_arvore = """
 <summary><strong>Série: Arquivo Público do Estado de São Paulo <span class="sigla-codigo">(APESP)</span></strong></summary>
 <details>
 <summary>Subsérie: Criar, construir, inaugurar (1952-1978)</summary>
-<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada.</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPAPESP_CPOS-PLNCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+<div class="item-simples"><span class="status-badge bg-verde">🟢 Publicada (seleção).</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPAPESP_DASP-PENITPRE-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Planta estrutural (Companhia Paulista de Obras e Serviços — CPOS)</summary>
@@ -1452,16 +1746,21 @@ html_arvore = """
 <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
-<div class="item-simples"><span class="status-badge bg-amarelo">🟡 Em progresso.</span></div>
+<div class="item-simples"><span class="status-badge bg-amarelo">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 <details>
 <summary>Subsérie: Extras do filme Carandiru, por Hector Babenco (2002)</summary>
 <div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPGPDVE_FILMES-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
-<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_NOTICIAS-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
+</details>
+<details>
+<summary>Subsérie: Notícias do Massacre do Carandiru (2002)</summary>
+<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="tag-azul">BR-SPGPDVE_ARCOENGE-NOTDEMOLI-CSDTCARANDIRU_TXT-PNL-MT0_0001.xlsx</span></div>
 </details>
 </details>
+
 
 </details>
 
