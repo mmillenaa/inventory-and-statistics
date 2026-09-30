@@ -599,6 +599,19 @@ st.markdown(css_base, unsafe_allow_html=True)
 # ============================================================
 # FUNÇÕES DE EXTRAÇÃO, CACHE E WEBSCRAPING
 # ============================================================
+def norm_col(texto):
+    """Normaliza um nome de coluna/aba: sem acento, minúsculo, sem espaços."""
+    if pd.isna(texto):
+        return ""
+    return (
+        unicodedata.normalize("NFKD", str(texto))
+        .encode("ASCII", "ignore")
+        .decode("utf-8")
+        .lower()
+        .strip()
+    )
+
+
 def _ler_aba_geral(xls):
     """Lê a aba 'Geral' de um ExcelFile já aberto.
 
@@ -670,10 +683,6 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
     """
     linhas_catalogacao = []
     linhas_iniciativas = []
-
-    def norm_col(texto):
-        if pd.isna(texto): return ""
-        return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("utf-8").lower().strip()
 
     for nome_arq in lista_arquivos:
         caminho = os.path.join(pasta, nome_arq)
