@@ -620,6 +620,7 @@ def _ler_aba_geral(xls):
       2. Auto-detecta a linha de cabeçalho (procura por "código",
          "referência" ou "gênero" nas primeiras 15 linhas).
       3. Mapeia as colunas por NOME (fallback: por posição K/M/O/Q).
+    Devolve DataFrame com 4 colunas de classificação + '_codigo'.
     """
     aba_geral = None
     for s in xls.sheet_names:
@@ -667,7 +668,10 @@ def _ler_aba_geral(xls):
         return _por_nome(*nomes)
 
     c_gen = _por_nome("genero documental") or _por_pos(10, "genero")
-    c_esp = _por_nome("especie/tipo", "especie", "tipo documental") or _por_pos(12, "especie")
+    c_esp = (
+        _por_nome("especie/tipo", "especie", "tipo documental")
+        or _por_pos(12, "especie")
+    )
     c_tec = _por_nome("tecnica de registro", "tecnica") or _por_pos(14, "tecnica")
     c_for = _por_nome("forma documental", "forma") or _por_pos(16, "forma")
     c_cod = _por_nome("codigo de referencia", "codigo", "referencia")
@@ -803,8 +807,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     })
 
             elif tipo_aba == 'iniciativas':
-                c_tit = get_col('nome da iniciativa', 'titulo', 'iniciativa')
-                c_int = get_col('intervencao', 'finalidade')
+                c_tit = get_col('nome da iniciativa', 'iniciativa', 'titulo')                c_int = get_col('intervencao', 'finalidade')
                 c_abr = get_col('abrangencia')
                 c_mod = get_col('modalidade')
                 c_ano = get_col('ano', 'data')
@@ -1277,6 +1280,14 @@ with aba_inventario:
 
     # Usando a nova função que retorna as duas bases separadas
     df_consolidado, _ = carregar_e_cruzar_dados(selecionados, pasta_acervo)
+    # DEBUG TEMPORÁRIO — remover depois
+    with st.expander("DEBUG — classificação lida", expanded=False):
+        st.write("Colunas:", list(df_consolidado.columns))
+        for _c in ["Gênero documental", "Espécie/Tipo documental",
+                   "Técnica de registro", "Forma documental"]:
+            if _c in df_consolidado.columns:
+                amostra = df_consolidado[_c].dropna().unique()[:15]
+                st.write(f"**{_c}** → {list(amostra)}")
     st.subheader(traduzir("Busca avançada"))
     termo = st.text_input(
         traduzir("Pesquisar termo nas planilhas (ex: criança, portão, costura)")
