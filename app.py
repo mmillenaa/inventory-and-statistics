@@ -1,6 +1,7 @@
 import os
 import re
 import unicodedata
+from collections import Counter
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -449,7 +450,25 @@ def traduzir(texto_pt):
         "Frequência de datas grafadas nas iniciativas": {
             "English": "Frequency of dates written in initiatives",
             "Español": "Frecuencia de fechas escritas en las iniciativas",
-        },        
+        },
+        "Nuvem de palavras": {
+            "English": "Word cloud",
+            "Español": "Nube de palabras",
+        },
+        "O que deve conter? Selecione as colunas para gerar a nuvem:": {
+            "English": (
+                "What should it include? Select the columns to generate "
+                "the cloud:"
+            ),
+            "Español": (
+                "¿Qué debe contener? Seleccione las columnas para generar "
+                "la nube:"
+            ),
+        },
+        "Selecione ao menos uma coluna para gerar a nuvem.": {
+            "English": "Select at least one column to generate the cloud.",
+            "Español": "Seleccione al menos una columna para generar la nube.",
+        },
     }
 
     if idioma == "Português" or texto_pt not in dicionario:
@@ -666,6 +685,20 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                 c_prop = get_col('proponente')
                 c_link = get_col('link', 'fonte')
 
+                def _limpa_interv(v):
+                    """Ignora NA/vazio/None/'nan' etc. na coluna Intervenção."""
+                    try:
+                        if pd.isna(v):
+                            return ''
+                    except (TypeError, ValueError):
+                        pass
+                    s = str(v).strip()
+                    if s.lower() in (
+                        '', 'na', 'n/a', 'nan', 'none', 'null', '-', '--'
+                    ):
+                        return ''
+                    return s
+
                 for _, r in df.iterrows():
                     t = str(r[c_tit]).strip() if c_tit and pd.notna(r[c_tit]) else ''
                     if not t or t.lower() in ('nan', 'none'):
@@ -674,7 +707,7 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     linhas_iniciativas.append({
                         'Arquivo_origem': nome_arq,
                         'Nome da iniciativa': t,
-                        'Intervenção': str(r[c_int]).strip() if c_int and pd.notna(r[c_int]) else '',
+                        'Intervenção': _limpa_interv(r[c_int]) if c_int else '',
                         'Abrangência': str(r[c_abr]).strip() if c_abr and pd.notna(r[c_abr]) else '',
                         'Modalidade': str(r[c_mod]).strip() if c_mod and pd.notna(r[c_mod]) else '',
                         'Ano': str(r[c_ano]).strip() if c_ano and pd.notna(r[c_ano]) else '',
@@ -684,6 +717,24 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
 
     df_cat = pd.DataFrame(linhas_catalogacao)
     df_inic = pd.DataFrame(linhas_iniciativas)
+
+    # Deduplica variações de caixa em "Nome da iniciativa"
+    # (ex.: "roteiro de memória" e "Roteiro de Memória" viram um só valor).
+    if not df_inic.empty and 'Nome da iniciativa' in df_inic.columns:
+        df_inic['_chave_norm'] = (
+            df_inic['Nome da iniciativa'].astype(str)
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+            .str.lower()
+        )
+        mapa_canonico = (
+            df_inic[df_inic['Nome da iniciativa'].notna()]
+            .groupby('_chave_norm')['Nome da iniciativa']
+            .first()
+            .to_dict()
+        )
+        df_inic['Nome da iniciativa'] = df_inic['_chave_norm'].map(mapa_canonico)
+        df_inic = df_inic.drop(columns=['_chave_norm'])
     
     # Deduplicação segura: garante a não-duplicidade pelo código de referência.
     if not df_cat.empty and 'Código de referência' in df_cat.columns:
@@ -1117,10 +1168,12 @@ with aba_inventario:
             ),
             axis=1,
         )
-        padrao = r"\b" + r"\b|\b".join(termo_stem.split()) + r"\b"
-        mask = df_filtrado["NORMAL_BUSCA"].str.contains(
-            padrao, regex=True, na=False
-        )
+        partes_termo = [p for p in termo_stem.split() if p]
+        mask = pd.Series(True, index=df_filtrado.index)
+        for p in partes_termo:
+            mask &= df_filtrado["NORMAL_BUSCA"].str.contains(
+                rf"\b{p}\b", regex=True, na=False
+            )
         df_filtrado = df_filtrado[mask].drop(columns=["NORMAL_BUSCA"])
 
     st.subheader(traduzir("Filtros categoriais"))
@@ -1486,10 +1539,11 @@ with aba_iniciativas:
             termo_norm = normalizar_texto(termo_inic, stemmer)
             partes_termo = [p for p in termo_norm.split() if p]
             if partes_termo:
-                padrao = r"\b" + r"\b|\b".join(partes_termo) + r"\b"
-                mask_i = df_inic_filtrado["NORMAL_BUSCA"].str.contains(
-                    padrao, regex=True, na=False
-                )
+                mask_i = pd.Series(True, index=df_inic_filtrado.index)
+                for p in partes_termo:
+                    mask_i &= df_inic_filtrado["NORMAL_BUSCA"].str.contains(
+                        rf"\b{p}\b", regex=True, na=False
+                    )
                 df_inic_filtrado = df_inic_filtrado[mask_i].drop(
                     columns=["NORMAL_BUSCA"]
                 )
@@ -1503,6 +1557,10 @@ with aba_iniciativas:
             "Modalidade",
         ]
         cols_exist_inic = [c for c in cols_int_inic if c in df_iniciativas.columns]
+
+        ARQUIVO_PENHA = (
+            "BR-SPDIREITOVIOLESTADO_MAPEAMENTOS-NOTICIAS-MSSCPENHA.xlsx"
+        )
 
         filtros_sel_inic = {}
         if cols_exist_inic and not df_inic_filtrado.empty:
@@ -1524,14 +1582,39 @@ with aba_iniciativas:
                             str(v).strip()
                             for v in df_opcoes_inic[col].dropna().unique()
                             if str(v).strip() and "Unnamed" not in str(v)
-                        ]
+                        ],
+                        key=chave_ordenacao_alfabetica,
                     )
+
+                    # Marca as opções que só aparecem na planilha da Penha
+                    mapa_lbl = {}
+                    if 'Arquivo_origem' in df_iniciativas.columns:
+                        for v in valores_inic:
+                            ors = df_iniciativas.loc[
+                                df_iniciativas[col].astype(str).str.strip() == v,
+                                'Arquivo_origem',
+                            ].dropna().unique()
+                            if len(ors) == 1 and ors[0] == ARQUIVO_PENHA:
+                                mapa_lbl[v] = f"{v} (Massacre da Penha)"
+                            else:
+                                mapa_lbl[v] = v
+
+                    ajuda = (
+                        "O campo Modalidade é apenas o detalhamento do campo "
+                        '"Abrangência".'
+                        if col == "Modalidade"
+                        else None
+                    )
+
                     filtros_sel_inic[col] = st.multiselect(
                         traduzir(col),
                         valores_inic,
                         key=f"fi_{col}",
+                        format_func=lambda x, _m=mapa_lbl: _m.get(x, x),
+                        help=ajuda,
                     )
 
+                    
         for col, sel in filtros_sel_inic.items():
             if sel:
                 df_inic_filtrado = df_inic_filtrado[
@@ -1547,7 +1630,7 @@ with aba_iniciativas:
         st.subheader(traduzir("Análises e visualizações do acervo"))
         op_limpar_i = traduzir("Nenhuma visualização (limpar tela)")
         op_timeline_i = traduzir("Linha do tempo (distribuição cronológica)")
-        op_nuvem_i = traduzir("Nuvem de palavras (Nome da iniciativa)")
+        op_nuvem_i = traduzir("Nuvem de palavras")
 
         vis_inic = st.selectbox(
             traduzir("Escolha uma visualização ou eixo temático:"),
@@ -1602,59 +1685,83 @@ with aba_iniciativas:
                     st.plotly_chart(fig_linha_inic, use_container_width=True)
 
         elif vis_inic == op_nuvem_i and not df_inic_filtrado.empty:
-            textos_inic = []
-            for c in [
-                "Nome da iniciativa",
-                "Intervenção",
-                "Abrangência",
-                "Modalidade",
-                "Proponente",
-            ]:
-                if c in df_inic_filtrado.columns:
+            colunas_disponiveis = [
+                c for c in [
+                    "Nome da iniciativa",
+                    "Ano",
+                    "Proponente",
+                    "Link / Fonte",
+                    "Intervenção",
+                    "Abrangência",
+                    "Modalidade",
+                ]
+                if c in df_inic_filtrado.columns
+            ]
+
+            cols_escolhidas = st.multiselect(
+                traduzir(
+                    "O que deve conter? Selecione as colunas para gerar "
+                    "a nuvem:"
+                ),
+                colunas_disponiveis,
+                default=colunas_disponiveis,
+                key="cols_nuvem_inic",
+            )
+
+            if not cols_escolhidas:
+                st.info(
+                    traduzir(
+                        "Selecione ao menos uma coluna para gerar a nuvem."
+                    )
+                )
+            else:
+                textos_inic = []
+                for c in cols_escolhidas:
                     textos_inic += (
                         df_inic_filtrado[c].dropna().astype(str).tolist()
                     )
-            texto_completo_inic = " ".join(textos_inic).strip()
+                texto_completo_inic = " ".join(textos_inic).strip()
 
-            stopwords_i = set(
-                [
-                    "de", "a", "o", "que", "e", "do", "da", "em", "um",
-                    "para", "com", "não", "uma", "os", "no", "se", "na",
-                    "por", "mais", "as", "dos", "como", "mas", "ao", "ele",
-                    "das", "à", "seu", "sua", "ou", "quando", "muito", "nos",
-                    "já", "eu", "também", "só", "pelo", "pela", "até", "isso",
-                    "ela", "entre", "depois", "sem", "mesmo", "aos", "seus",
-                    "quem", "nas", "me", "esse", "eles", "você", "essa",
-                    "num", "nem", "suas", "meu", "às", "minha", "numa",
-                    "pelos", "elas", "qual", "nós", "lhe", "deles", "essas",
-                    "esses", "pelas", "este", "dele", "tu", "te", "vocês",
-                    "vos", "lhes", "meus", "minhas", "teu", "tua", "teus",
-                    "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
-                ]
-            )
-            try:
-                wc_inic = WordCloud(
-                    width=800,
-                    height=400,
-                    background_color="rgba(0,0,0,0)",
-                    mode="RGBA",
-                    colormap="viridis",
-                    stopwords=stopwords_i,
-                    max_words=100,
-                ).generate(texto_completo_inic)
-                fig_i, ax_i = plt.subplots(figsize=(10, 5))
-                ax_i.imshow(wc_inic, interpolation="bilinear")
-                ax_i.axis("off")
-                fig_i.patch.set_alpha(0)
-                st.pyplot(fig_i)
-            except ValueError:
-                st.warning(
-                    traduzir(
-                        "Não há vocabulário útil suficiente nos itens "
-                        "filtrados para gerar a nuvem de palavras. Tente "
-                        "remover alguns filtros."
-                    )
+                stopwords_i = set(
+                    [
+                        "de", "a", "o", "que", "e", "do", "da", "em", "um",
+                        "para", "com", "não", "uma", "os", "no", "se", "na",
+                        "por", "mais", "as", "dos", "como", "mas", "ao",
+                        "ele", "das", "à", "seu", "sua", "ou", "quando",
+                        "muito", "nos", "já", "eu", "também", "só", "pelo",
+                        "pela", "até", "isso", "ela", "entre", "depois",
+                        "sem", "mesmo", "aos", "seus", "quem", "nas", "me",
+                        "esse", "eles", "você", "essa", "num", "nem", "suas",
+                        "meu", "às", "minha", "numa", "pelos", "elas",
+                        "qual", "nós", "lhe", "deles", "essas", "esses",
+                        "pelas", "este", "dele", "tu", "te", "vocês", "vos",
+                        "lhes", "meus", "minhas", "teu", "tua", "teus",
+                        "tuas", "nosso", "nossa", "nossos", "nossas", "nan",
+                    ]
                 )
+                try:
+                    wc_inic = WordCloud(
+                        width=800,
+                        height=400,
+                        background_color="rgba(0,0,0,0)",
+                        mode="RGBA",
+                        colormap="viridis",
+                        stopwords=stopwords_i,
+                        max_words=100,
+                    ).generate(texto_completo_inic)
+                    fig_i, ax_i = plt.subplots(figsize=(10, 5))
+                    ax_i.imshow(wc_inic, interpolation="bilinear")
+                    ax_i.axis("off")
+                    fig_i.patch.set_alpha(0)
+                    st.pyplot(fig_i)
+                except ValueError:
+                    st.warning(
+                        traduzir(
+                            "Não há vocabulário útil suficiente nos itens "
+                            "filtrados para gerar a nuvem de palavras. Tente "
+                            "remover alguns filtros."
+                        )
+                    )
 
         st.dataframe(df_inic_filtrado, use_container_width=True, hide_index=True)
 
