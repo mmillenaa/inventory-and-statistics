@@ -807,7 +807,8 @@ def carregar_e_cruzar_dados(lista_arquivos, pasta):
                     })
 
             elif tipo_aba == 'iniciativas':
-                c_tit = get_col('nome da iniciativa', 'iniciativa', 'titulo')                c_int = get_col('intervencao', 'finalidade')
+                c_tit = get_col('nome da iniciativa', 'iniciativa', 'titulo')
+                c_int = get_col('intervencao', 'finalidade')
                 c_abr = get_col('abrangencia')
                 c_mod = get_col('modalidade')
                 c_ano = get_col('ano', 'data')
