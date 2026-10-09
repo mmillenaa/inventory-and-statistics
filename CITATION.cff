@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Inventory and Statistics of GPDVE Collections"
+abstract: >-
+  A local Streamlit application for consolidating, exploring, and analysing 
+  structured archival metadata, enabling transversal statistical generation 
+  across collections. Designed for cataloguing and archival description, it 
+  supports the management of photographic archives and primary written sources 
+  in compliance with national and international archival standards (CONARQ, NOBRADE, ISAD(G)).
+authors:
+  - family-names: "Franco"
+    given-names: "Millena Miranda"
+    affiliation: "Escola de Direito de São Paulo, Fundação Getulio Vargas (FGV)"
+# repository-code: "https://github.com/SEU_USUARIO/SEU_REPOSITORIO"
+license: MIT
+version: 0.1.0
+date-released: "2026-10-09"
+keywords:
+  - digital humanities
+  - archival metadata
+  - Python
+  - Streamlit
+  - state violence archives
+  - collection management
