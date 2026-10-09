@@ -532,6 +532,16 @@ span[data-baseweb="tag"] span { color: white !important; }
     margin-bottom: 8px;
     overflow-wrap: anywhere;
 }
+.st-key-cat_sources,
+.st-key-inic_sources,
+.st-key-cat_sources [data-testid="stVerticalBlock"],
+.st-key-inic_sources [data-testid="stVerticalBlock"] {
+    gap: 0 !important;
+}
+.st-key-cat_sources .desc-lista,
+.st-key-inic_sources .desc-lista {
+    margin: 0 !important;
+}
 </style>
 """
 st.markdown(css_base, unsafe_allow_html=True)
