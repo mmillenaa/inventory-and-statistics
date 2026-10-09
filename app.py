@@ -682,8 +682,6 @@ def extrair_equipe_fgv(consultar_online=False):
 # CABEÇALHO DO PROGRAMA
 # ============================================================
 # A senha só é exigida quando foi configurada nos segredos do Streamlit.
-if segredo("senha_porta") and not check_password():
-    st.stop()
 st.session_state["app_language"] = idioma
 
 st.title(
