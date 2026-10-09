@@ -5,6 +5,7 @@ import re
 import unicodedata
 
 import pandas as pd
+from openpyxl.utils import get_column_letter
 
 CATEGORIES = ("Gênero documental", "Espécie/Tipo documental", "Técnica de registro", "Forma documental")
 CAT_FIELDS = {
@@ -96,6 +97,7 @@ def read_table(book, sheet, marker):
 
 def load_collection(files, folder):
     catalogue, initiatives, representations, issues = [], [], [], []
+    catalogue_columns, initiative_columns = {}, {}
     for filename in sorted(set(files)):
         path = Path(folder) / filename
         try:
@@ -106,6 +108,7 @@ def load_collection(files, folder):
                 if "MAPEAMENTOS" in filename.upper():
                     table, start = read_table(book, general, "iniciativa")
                     mapping = {field: find_column(table.columns, aliases) for field, aliases in INI_FIELDS.items()}
+                    initiative_columns[filename] = {general: {field: get_column_letter(table.columns.get_loc(column)+1) for field, column in mapping.items() if column is not None}}
                     required = ["Nome da iniciativa", "Ano", "Título do documento"]
                     absent = [f for f in required if mapping[f] is None]
                     if absent:
@@ -122,6 +125,8 @@ def load_collection(files, folder):
 
                 master, master_start = read_table(book, general, "genero documental")
                 class_cols = {field: find_column(master.columns, (header(field),)) for field in CATEGORIES}
+                subgroup_column = find_column(master.columns, ("designacao do subconjunto documental",))
+                catalogue_columns[filename] = {general: {field: get_column_letter(master.columns.get_loc(column)+1) for field, column in class_cols.items() if column is not None}}
                 if any(c is None for c in class_cols.values()):
                     raise ValueError("Geral sem as quatro classificações documentais")
                 for index, row in master.iterrows():
@@ -134,7 +139,7 @@ def load_collection(files, folder):
                             token = token.zfill(3)
                         pieces.append(token)
                     ref = "".join(pieces)
-                    representations.append({"Arquivo_origem": filename, "Aba_origem": general, "Linha_origem": master_start+index, "Representação_ID": f"{filename}:{general}:{master_start+index}", "Referência do arquivo": ref, "Chave": reference_key(ref), **{field: clean(row[c]).upper() for field, c in class_cols.items()}})
+                    representations.append({"Arquivo_origem": filename, "Aba_origem": general, "Linha_origem": master_start+index, "Representação_ID": f"{filename}:{general}:{master_start+index}", "Referência do arquivo": ref, "Chave": reference_key(ref), "Chave documental": reference_key("".join(pieces[:19])), "Subconjunto documental": clean(row[subgroup_column]) if subgroup_column is not None else "", **{field: clean(row[c]).upper() for field, c in class_cols.items()}})
 
                 for sheet in book.sheet_names:
                     if header(sheet) in {"geral", "classificacao", "controle"}:
@@ -144,6 +149,7 @@ def load_collection(files, folder):
                     except ValueError:
                         continue
                     mapping = {field: find_column(table.columns, aliases) for field, aliases in CAT_FIELDS.items()}
+                    catalogue_columns[filename][sheet] = {field: get_column_letter(table.columns.get_loc(column)+1) for field, column in mapping.items() if column is not None}
                     for index, row in table.iterrows():
                         record = {field: clean(row[c]) if c is not None else "" for field, c in mapping.items()}
                         if not record["Título (Busca)"]:
@@ -156,13 +162,29 @@ def load_collection(files, folder):
 
     keys = Counter((r["Arquivo_origem"], reference_key(r["Código de referência"])) for r in catalogue if r["Código de referência"])
     rep_index = defaultdict(list)
+    parent_index = defaultdict(list)
+    subgroup_index = defaultdict(list)
+    descriptions_per_sheet = Counter((r["Arquivo_origem"], r["Aba_origem"]) for r in catalogue)
     for rep in representations:
         rep_index[(rep["Arquivo_origem"], rep["Chave"])].append(rep)
+        parent_index[(rep["Arquivo_origem"], rep["Chave documental"])].append(rep)
+        leaf = re.split(r"[-_/]", rep["Subconjunto documental"])[0]
+        subgroup_index[(rep["Arquivo_origem"], reference_key(leaf))].append(rep)
     matched = set()
     for record in catalogue:
         key = (record["Arquivo_origem"], reference_key(record["Código de referência"]))
         conflict = bool(key[1] and keys[key] > 1)
         matches = [] if conflict else rep_index.get(key, [])
+        # Uma descrição de DVD pode corresponder a vários arquivos componentes.
+        if not matches and not conflict and key[1]:
+            matches = parent_index.get(key, [])
+        # Abas com uma única descrição e subconjuntos identificados na Geral
+        # distinguem os filmes cujo código foi copiado nas seis descrições.
+        if not matches and descriptions_per_sheet[(record["Arquivo_origem"], record["Aba_origem"])] == 1:
+            sheet_key = reference_key(record["Aba_origem"])
+            # A própria planilha abrevia BastidFilmeCarandiru na Geral.
+            sheet_key = {"bastidfilmecarandiru": "bastidflmcarandiru"}.get(sheet_key, sheet_key)
+            matches = subgroup_index.get((record["Arquivo_origem"], sheet_key), [])
         record["Conflito de código"] = conflict
         record["Representações vinculadas"] = len(matches)
         record["Representações_ID"] = tuple(r["Representação_ID"] for r in matches)
@@ -170,7 +192,7 @@ def load_collection(files, folder):
             record[field] = tuple(sorted({r[field] for r in matches if r[field]}))
         matched.update(record["Representações_ID"])
         if conflict or not matches:
-            issues.append({"Arquivo": record["Arquivo_origem"], "Aba": record["Aba_origem"], "Linha": record["Linha_origem"], "Problema": "Código repetido em descrições diferentes; classificação não atribuída" if conflict else "Descrição sem correspondência na Geral"})
+            issues.append({"Arquivo": record["Arquivo_origem"], "Aba": record["Aba_origem"], "Linha": record["Linha_origem"], "Problema": ("Código repetido; associação identificada pela aba e pelo subconjunto da Geral" if matches else "Código repetido em descrições diferentes; classificação não atribuída") if conflict else "Descrição sem correspondência na Geral"})
     for rep in representations:
         if rep["Representação_ID"] not in matched:
             issues.append({"Arquivo": rep["Arquivo_origem"], "Aba": rep["Aba_origem"], "Linha": rep["Linha_origem"], "Problema": "Representação sem descrição vinculada"})
@@ -184,6 +206,8 @@ def load_collection(files, folder):
     ini = pd.DataFrame(initiatives, columns=list(INI_FIELDS)+["Arquivo_origem", "Aba_origem", "Linha_origem", "Registro_ID"])
     cat.attrs["representations"] = representations
     cat.attrs["issues"] = issues
+    cat.attrs["source_columns"] = catalogue_columns
+    ini.attrs["source_columns"] = initiative_columns
     return cat, ini
 
 
@@ -210,14 +234,38 @@ def filter_categories(frame, selections):
     return result
 
 
+def reconcile_filters(frame, fields, selections, preferred=None):
+    """Mantém um recorte possível após mudar a busca, as fontes ou um filtro."""
+    order = ([preferred] if preferred in fields else []) + [f for f in fields if f != preferred]
+    valid, remaining = {}, frame
+    for field in order:
+        options = set(category_options(remaining, field))
+        valid[field] = [v for v in selections.get(field, []) if v in options]
+        remaining = filter_categories(remaining, {field: valid[field]})
+    return valid
+
+
+def faceted_options(frame, fields, selections):
+    """Cada opção precisa retornar registros com os demais filtros ativos."""
+    return {field: category_options(filter_categories(frame, {f: v for f, v in selections.items() if f != field}), field)
+            for field in fields}
+
+
+def search_matches(frame, term):
+    fields = [f for f in dict.fromkeys(list(CAT_FIELDS)+list(INI_FIELDS)) if f in frame]
+    query = normalize(term)
+    if not query:
+        return pd.DataFrame(False, index=frame.index, columns=fields)
+    pattern = re.compile(r"(?<!\w)" + re.escape(query) + r"(?!\w)")
+    return pd.DataFrame({f: frame[f].map(lambda value: bool(pattern.search(normalize(value)))) for f in fields}, index=frame.index)
+
+
 def search_records(frame, term):
     query = normalize(term)
     if not query or frame.empty:
         return frame.copy()
-    fields = [f for f in dict.fromkeys(list(CAT_FIELDS)+list(INI_FIELDS)) if f in frame]
-    pattern = re.compile(r"(?<!\w)" + re.escape(query) + r"(?!\w)")
     # Cada campo é pesquisado separadamente, impedindo frases artificiais entre colunas.
-    mask = frame.apply(lambda row: any(pattern.search(normalize(row[f])) for f in fields), axis=1)
+    mask = search_matches(frame, term).any(axis=1)
     return frame.loc[mask.astype(bool)].copy()
 
 
@@ -253,4 +301,4 @@ def display_table(frame):
     for field in CATEGORIES:
         if field in view:
             view[field] = view[field].map(lambda value: ", ".join(values_of(value)))
-    return view.drop(columns=["Representações_ID"], errors="ignore")
+    return view.drop(columns=["Representações_ID", "Registro_ID", "Representação_ID", "Conflito de código", "Representações vinculadas", "Chave"], errors="ignore")

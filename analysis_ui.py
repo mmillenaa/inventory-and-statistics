@@ -1,5 +1,5 @@
 """Interface das duas áreas de análise; os cálculos ficam em data_logic."""
-from io import BytesIO
+from html import escape
 import re
 
 import matplotlib.pyplot as plt
@@ -7,126 +7,129 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from wordcloud import WordCloud
-from docx import Document
 
-from data_logic import (CATEGORIES, CAT_FIELDS, INI_FIELDS, category_options,
-                        display_table, filter_categories, metadata_count,
-                        normalize, phrase_frequency, search_records, year_frequency)
-from vocabulario_controlado import rotular_sigla
+from data_logic import (CATEGORIES, category_options, display_table,
+                        faceted_options, filter_categories, metadata_count,
+                        phrase_frequency, reconcile_filters, search_matches,
+                        search_records, values_of, year_frequency)
+from vocabulario_controlado import rotulo_curto_sigla
 
-ALL_CARANDIRU = "Rememorações todas (Carandiru)"
-PENHA_SUFFIX = " (Massacre da Penha)"
+CATEGORY_TYPES = {**dict(zip(CATEGORIES, ("genero", "especie", "tecnica", "forma"))),
+                  "Gênero declarado": "genero", "Técnica declarada": "tecnica"}
+INITIATIVE_CLOUD_FIELDS = ["Nome da iniciativa", "Ano", "Fonte / Origem", "Proponente"]
+FIELD_NAMES = {"Título (Busca)": "Título descritivo", "Conteúdo (Busca)": "Conteúdo / Assunto",
+               "Data (Busca)": "Data", "Notas (Busca)": "Notas",
+               "Arquivo_origem": "Planilha de origem", "Aba_origem": "Aba de origem",
+               "Linha_origem": "Linha na planilha", "Fonte / Origem": "Fonte/Origem",
+               "Gênero declarado": "Gênero na descrição documental",
+               "Técnica declarada": "Técnica na descrição documental"}
+
+
+def category_label(value, field, with_code=False):
+    name = rotulo_curto_sigla(value, tipo=CATEGORY_TYPES.get(field))
+    name = re.split(r"\s*\(ex\.?", name, maxsplit=1)[0].rstrip(" .,")
+    return f"{name} — {value}" if with_code and name != value else name
 
 
 def _reset(prefix, signature):
     if st.session_state.get(prefix + "signature") != signature:
         for key in list(st.session_state):
-            if key.startswith(prefix) and key != prefix + "files":
+            if key.startswith(prefix) and key != prefix + "files" and not key.startswith(prefix + "source_"):
                 del st.session_state[key]
         st.session_state[prefix + "signature"] = signature
 
 
-def _intervention_changed(prefix):
-    key = prefix + "Intervenção"
-    selected = st.session_state.get(key, [])
-    previous = st.session_state.get(key + "_previous", [])
-    added = set(selected) - set(previous)
-    if ALL_CARANDIRU in added:
-        selected = [v for v in selected if v == ALL_CARANDIRU or v.endswith(PENHA_SUFFIX)]
-    elif any(not v.endswith(PENHA_SUFFIX) and v != ALL_CARANDIRU for v in added):
-        selected = [v for v in selected if v != ALL_CARANDIRU]
-    st.session_state[key] = selected
-    st.session_state[key + "_previous"] = selected.copy()
+def _sync_filters(frame, fields, prefix, preferred=None):
+    searched = search_records(frame, st.session_state.get(prefix + "search", ""))
+    selected = {field: st.session_state.get(prefix + field, []) for field in fields}
+    valid = reconcile_filters(searched, fields, selected, preferred)
+    for field in fields:
+        key = prefix + field
+        if selected[field] != valid[field] or key not in st.session_state:
+            st.session_state[key] = valid[field]
 
 
-def initiative_filter(frame, selected):
-    if not selected:
-        return frame
-    car = frame["Arquivo_origem"].str.contains("REMEMORA-CARANDIRU", regex=False)
-    pen = frame["Arquivo_origem"].str.contains("MSSCPENHA", regex=False)
-    mask = pd.Series(False, index=frame.index)
-    for value in selected:
-        if value == ALL_CARANDIRU:
-            mask |= car
-        elif value.endswith(PENHA_SUFFIX):
-            mask |= pen & (frame["Finalidade primária"] == value[:-len(PENHA_SUFFIX)])
-        else:
-            mask |= car & (frame["Intervenção"] == value)
-    return frame.loc[mask].copy()
+def _clear_search(frame, fields, prefix):
+    st.session_state[prefix + "search"] = ""
+    _sync_filters(frame, fields, prefix)
 
 
-def _export_docx(frame):
-    doc = Document()
-    doc.add_heading("Inventário filtrado", 0)
-    doc.add_paragraph(f"Registros: {len(frame)}")
-    for _, row in frame.iterrows():
-        title = row.get("Título (Busca)", row.get("Título do documento", "")) or row.get("Nome da iniciativa", "Registro")
-        doc.add_heading(str(title), 2)
-        for field, value in row.items():
-            if str(value).strip() and field not in {"Registro_ID", "Representações_ID", "Conflito de código"}:
-                doc.add_paragraph(f"{field}: {value}")
-    buf = BytesIO()
-    doc.save(buf)
-    return buf.getvalue()
+def _source_note(kind, fields, frame):
+    if not fields:
+        return
+    layouts = frame.attrs.get("source_columns", {})
+    if kind == "initiatives":
+        parts = []
+        for filename in frame["Arquivo_origem"].unique():
+            columns = layouts.get(filename, {}).get("Geral", {})
+            source = "Penha" if "MSSCPENHA" in filename else "Carandiru"
+            labels = ", ".join(f"{FIELD_NAMES.get(field, field)} ({columns.get(field, '?')})" for field in fields)
+            parts.append(f"{source}, aba Geral: {labels}")
+        st.caption("Campos de origem — " + "; ".join(parts) + ".")
+        return
+    positions = {field: set() for field in fields}
+    for filename, sheets in layouts.items():
+        for sheet, mapping in sheets.items():
+            if (sheet == "Geral") != all(field in CATEGORIES for field in fields):
+                continue
+            for field in fields:
+                if field in mapping:
+                    positions[field].add(mapping[field])
+    labels = ", ".join(FIELD_NAMES.get(field, field) + (" (coluna " + "/".join(sorted(positions[field])) + ")" if positions[field] else "") for field in fields)
+    if kind == "catalogue" and all(field in CATEGORIES for field in fields):
+        st.caption(f"Campo de origem: {labels}, na aba Geral das planilhas selecionadas. A contagem usa as descrições documentais vinculadas a essas classificações.")
+    elif kind == "catalogue":
+        st.caption(f"Campos de origem: {labels}, nas abas de descrição documental das planilhas selecionadas.")
+    else:
+        st.caption(f"Campos de origem: {labels}, na aba Geral das planilhas de mapeamento selecionadas.")
 
 
 def render_analysis(kind, available, descriptions, loader, folder, translate):
     prefix = "cat_" if kind == "catalogue" else "inic_"
-    files = st.multiselect(translate("Selecione as planilhas para integrar:"), available, default=available, key=prefix+"files")
+    files = []
+    with st.container(key=prefix+"sources"):
+        for filename in available:
+            if st.checkbox(filename, value=True, key=prefix+"source_"+filename):
+                files.append(filename)
+            translations = descriptions.get(filename, {})
+            description = translations.get(st.session_state.get("app_language", "Português"), translations.get("Português", ""))
+            if description:
+                st.markdown(f"<div class='desc-lista'>{escape(description)}</div>", unsafe_allow_html=True)
+    st.session_state[prefix+"files"] = files
     _reset(prefix, tuple(sorted(files)))
-    for filename in files:
-        description = descriptions.get(filename, {}).get(st.session_state.get("app_language", "Português"), "")
-        if description:
-            st.caption(f"{filename}: {description}")
     if not files:
         st.info("Selecione ao menos uma planilha nesta aba.")
         return
     cat, ini = loader(files, folder)
-    original = cat if kind == "catalogue" else ini
-    frame = original
-    if kind == "catalogue":
-        unit = st.radio("Unidade da contagem", ["Descrições documentais", "Representações / arquivos (Geral)"], horizontal=True, key=prefix+"unit")
-        if unit.startswith("Representações"):
-            frame = pd.DataFrame(cat.attrs.get("representations", []))
-            if frame.empty:
-                st.info("Não há representações nas bases selecionadas.")
-                return
-        else:
-            st.caption("Uma descrição pode ter várias representações, como frente e verso. Códigos conflitantes são preservados e sinalizados.")
-    st.subheader(translate("Busca avançada"))
-    term = st.text_input("Pesquisar palavra, número ou frase inteira", key=prefix+"search")
-    if "Referência do arquivo" in frame:
-        filtered = frame[frame["Referência do arquivo"].map(normalize).str.contains(normalize(term), regex=False)] if term else frame.copy()
-    else:
-        filtered = search_records(frame, term)
-    st.subheader(translate("Filtros categoriais"))
+    frame = cat if kind == "catalogue" else ini
     fields = list(CATEGORIES) if kind == "catalogue" else ["Nome da iniciativa", "Intervenção", "Abrangência", "Modalidade"]
-    columns = st.columns(4)
-    selections = {}
-    for column, field in zip(columns, fields):
+    _sync_filters(frame, fields, prefix)
+    st.subheader(translate("Busca avançada"))
+    search_column, clear_column = st.columns([12, 1], vertical_alignment="bottom")
+    with search_column:
+        term = st.text_input("Pesquisar palavra, número ou frase inteira", key=prefix+"search",
+                             on_change=_sync_filters, args=(frame, fields, prefix))
+    with clear_column:
+        st.button("Limpar", key=prefix+"clear_search", type="tertiary", help="Limpar somente a busca avançada",
+                  on_click=_clear_search, args=(frame, fields, prefix))
+    searched = search_records(frame, term)
+    selections = {field: st.session_state[prefix + field] for field in fields}
+    options_by_field = faceted_options(searched, fields, selections)
+    st.subheader(translate("Filtros categoriais"))
+    for column, field in zip(st.columns(4), fields):
         with column:
-            key = prefix + field
-            if field == "Intervenção":
-                car = ini[ini["Arquivo_origem"].str.contains("REMEMORA-CARANDIRU", regex=False)]
-                pen = ini[ini["Arquivo_origem"].str.contains("MSSCPENHA", regex=False)]
-                options = ([ALL_CARANDIRU] if not car.empty else []) + category_options(car, field) + [v+PENHA_SUFFIX for v in category_options(pen, "Finalidade primária")]
-                default = [ALL_CARANDIRU] if not car.empty and pen.empty else []
-                if key not in st.session_state:
-                    st.session_state[key] = default
-                selected = st.pills(translate(field), options, selection_mode="multi", key=key, on_change=_intervention_changed, args=(prefix,), help="Carandiru: intervenção. Penha: finalidade primária. Os dois campos originais são preservados na tabela.")
-                filtered = initiative_filter(filtered, selected)
-            else:
-                options = category_options(frame, field)
-                if key in st.session_state:
-                    st.session_state[key] = [v for v in st.session_state[key] if v in options]
-                def label(value, field=field):
-                    if kind == "catalogue":
-                        type_key = dict(zip(CATEGORIES, ("genero", "especie", "tecnica", "forma")))[field]
-                        return rotular_sigla(value, tipo=type_key)
-                    sources = set(ini.loc[ini[field] == value, "Arquivo_origem"])
-                    return value + PENHA_SUFFIX if sources and all("MSSCPENHA" in f for f in sources) else value
-                selections[field] = st.multiselect(translate(field), options, key=key, format_func=label, help='Este campo é apenas o detalhamento do campo "Abrangência".' if field == "Modalidade" else None)
-    filtered = filter_categories(filtered, selections)
+            options = options_by_field[field]
+            st.multiselect(translate(field), options, key=prefix+field,
+                           format_func=(lambda value, field=field: category_label(value, field, True)) if kind == "catalogue" else str,
+                           on_change=_sync_filters, args=(frame, fields, prefix, field),
+                           disabled=not options,
+                           help='Este campo é o detalhamento do campo "Abrangência".' if field == "Modalidade" else None)
+    filtered = filter_categories(searched, selections)
+    if term.strip():
+        matches = search_matches(filtered, term).sum()
+        origin = "; ".join(f"{FIELD_NAMES.get(field, field)} ({int(count)} registros)" for field, count in matches.items() if count)
+        if origin:
+            st.caption(f'Busca por “{term}”: correspondências nos campos {origin}. Um registro pode corresponder em mais de um campo.')
     st.subheader(translate("Indicadores"))
     metrics = st.columns(3)
     metrics[0].metric("Registros exibidos", len(filtered))
@@ -134,46 +137,45 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
         metrics[1].metric("Gêneros documentais", len(category_options(filtered, "Gênero documental")))
     else:
         metrics[1].metric("Bases selecionadas", len(files))
-    is_representation = "Representação_ID" in filtered
-    count = sum(bool(str(v).strip()) for f in CATEGORIES for v in filtered[f]) if is_representation else metadata_count(filtered, kind)
-    metrics[2].metric("Metadados preenchidos no recorte", count)
-    if is_representation:
-        st.caption("Na visão de representações, metadados preenchidos contam as quatro classificações da Geral.")
-    else:
-        st.caption("Metadados preenchidos contam os campos de origem, uma vez por registro. Identificadores internos e classificações derivadas da Geral não entram novamente na soma.")
+    metrics[2].metric("Metadados preenchidos no recorte", metadata_count(filtered, kind))
+    st.caption("Metadados preenchidos contam os campos de origem, uma vez por registro.")
     st.subheader(translate("Análises e visualizações do acervo"))
     views = ["Nenhuma visualização (limpar tela)", "Linha do tempo (distribuição cronológica)", "Frequências categoriais", "Nuvem de palavras"]
-    if kind == "catalogue" and not is_representation:
+    if kind == "catalogue":
         views.append("Frequências temáticas")
     visualization = st.selectbox("Escolha uma visualização", views, key=prefix+"view")
     if filtered.empty:
-        st.info("Nenhum registro corresponde ao recorte selecionado.")
+        st.info("Nenhum registro corresponde à busca. Limpe ou ajuste o termo pesquisado.")
     elif visualization == views[1]:
         field = "Data (Busca)" if kind == "catalogue" else "Ano"
-        if field not in filtered:
-            st.info("A Geral não informa datas. Selecione Descrições documentais para analisar a cronologia.")
-        else:
-            frequency, dated, undated = year_frequency(filtered, field)
-            st.caption(f"Registros com ano: {dated}. Sem ano extraível: {undated}. Anos sem registros no intervalo aparecem com zero.")
-            if kind == "catalogue":
-                st.caption("As fontes utilizam datas de criação ou difusão. O gráfico apresenta a data registrada em cada descrição.")
-            if not frequency.empty:
-                fig = px.line(frequency, x="Ano", y="Frequência", markers=True)
-                fig.update_layout(yaxis_title="Registros", xaxis_title="Ano")
-                st.plotly_chart(fig, width="stretch")
-                st.dataframe(frequency, hide_index=True, width="stretch")
-    elif visualization == views[2]:
-        field = st.selectbox("Campo da frequência", fields, key=prefix+"frequency_field")
-        counts = {v: int(filter_categories(filtered, {field:[v]}).shape[0]) for v in category_options(filtered, field)}
-        frequency = pd.DataFrame(list(counts.items()), columns=["Categoria", "Registros"])
-        st.caption("Cada registro conta uma vez por categoria. Um registro com várias categorias pode entrar em mais de uma barra.")
-        st.dataframe(frequency, hide_index=True, width="stretch")
+        _source_note(kind, [field], filtered)
+        frequency, dated, undated = year_frequency(filtered, field)
+        st.caption(f"Registros com ano: {dated}. Sem ano extraível: {undated}. Anos sem registros no intervalo aparecem com zero.")
         if not frequency.empty:
+            fig = px.line(frequency, x="Ano", y="Frequência", markers=True)
+            fig.update_layout(yaxis_title="Registros", xaxis_title="Ano")
+            st.plotly_chart(fig, width="stretch")
+            st.dataframe(frequency, hide_index=True, width="stretch")
+    elif visualization == views[2]:
+        available_fields = [field for field in fields if category_options(filtered, field)]
+        if available_fields:
+            field = st.selectbox("Campo da frequência", available_fields, key=prefix+"frequency_field")
+            _source_note(kind, [field], filtered)
+            counts = {value: len(filter_categories(filtered, {field: [value]})) for value in category_options(filtered, field)}
+            frequency = pd.DataFrame([{"Categoria": category_label(value, field) if kind == "catalogue" else value, "Registros": count} for value, count in counts.items()])
+            st.caption("Cada registro conta uma vez por categoria. Um registro com várias categorias pode entrar em mais de uma barra.")
+            st.dataframe(frequency, hide_index=True, width="stretch")
             st.plotly_chart(px.bar(frequency, x="Categoria", y="Registros"), width="stretch")
+        else:
+            st.info("Os registros deste recorte não têm classificações preenchidas para este gráfico.")
     elif visualization == views[3]:
-        options = ["Título (Busca)", "Conteúdo (Busca)", "Palavras-chave"] if kind == "catalogue" else ["Nome da iniciativa", "Ano", "Fonte / Origem", "Proponente", "Título do documento"]
-        options = [f for f in options if f in filtered]
-        chosen = st.multiselect("O que deve conter?", options, default=options, key=prefix+"cloud_fields")
+        options = ["Título (Busca)", "Conteúdo (Busca)", "Palavras-chave"] if kind == "catalogue" else INITIATIVE_CLOUD_FIELDS
+        options = [field for field in options if field in filtered]
+        key = prefix+"cloud_fields"
+        if key in st.session_state:
+            st.session_state[key] = [field for field in st.session_state[key] if field in options]
+        chosen = st.multiselect("O que deve conter?", options, default=options if key not in st.session_state else None, key=key, format_func=lambda field: FIELD_NAMES.get(field, field))
+        _source_note(kind, chosen, filtered)
         combined, detail = phrase_frequency(filtered, chosen)
         st.caption("Frequência somada nos campos selecionados. Vírgulas separam termos; espaços preservam nomes e expressões completas.")
         if combined:
@@ -186,23 +188,24 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
                 plt.close(fig)
             except ValueError:
                 st.info("Os termos não couberam na nuvem. As frequências completas continuam disponíveis na tabela.")
+            detail["Campo"] = detail["Campo"].map(lambda field: FIELD_NAMES.get(field, field))
             st.dataframe(detail.sort_values("Frequência", ascending=False), hide_index=True, width="stretch")
         else:
             st.info("Selecione campos com termos preenchidos para gerar a nuvem.")
     elif visualization == "Frequências temáticas":
         themes = {"Família":["mãe", "filho", "criança", "pai", "avó"], "Educação, artes e ofícios":["escola", "alfabetização", "atividade cultural", "costura"], "Arquitetura prisional":["grade", "cela", "pavilhão", "parede", "portão"]}
         theme = st.selectbox("Tema", list(themes), key=prefix+"theme")
-        frequency = pd.DataFrame([{"Termo": term, "Registros": len(search_records(filtered[["Título (Busca)", "Conteúdo (Busca)"]], term))} for term in themes[theme]])
+        _source_note(kind, ["Título (Busca)", "Conteúdo (Busca)"], filtered)
+        frequency = pd.DataFrame([{"Termo": value, "Registros": len(search_records(filtered[["Título (Busca)", "Conteúdo (Busca)"]], value))} for value in themes[theme]])
         st.caption("Documentos contendo cada termo, independentemente do número de repetições. Um documento pode conter vários termos.")
         st.plotly_chart(px.bar(frequency, x="Termo", y="Registros"), width="stretch")
         st.dataframe(frequency, hide_index=True)
-    if visualization != views[0]:
+    if visualization != views[0] and not filtered.empty:
         with st.expander("Conferir registros e exportar"):
             view = display_table(filtered)
+            for field in CATEGORY_TYPES:
+                if field in view:
+                    view[field] = filtered[field].map(lambda value, field=field: ", ".join(category_label(v, field) for v in values_of(value)))
+            view = view.rename(columns=FIELD_NAMES)
             st.dataframe(view, hide_index=True, width="stretch")
             st.download_button("Baixar CSV", view.to_csv(index=False).encode("utf-8-sig"), "inventario-filtrado.csv", "text/csv", key=prefix+"csv")
-            if st.button("Preparar inventário Word", key=prefix+"prepare_docx"):
-                st.session_state[prefix+"docx"] = _export_docx(view)
-                st.session_state[prefix+"docx_signature"] = view.to_csv(index=False)
-            if st.session_state.get(prefix+"docx_signature") == view.to_csv(index=False):
-                st.download_button("Baixar DOCX", st.session_state[prefix+"docx"], "inventario-filtrado.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=prefix+"download_docx")

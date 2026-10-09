@@ -280,8 +280,6 @@ DICT_TECNICA = {
     "VID": "Captura de vídeo digital: codificação de quadros por sensor ou exportação de editores nativos.",
 }
 
-# TODO: dict_forma incompleto — o anexo enviado foi truncado.
-# Complete as entradas restantes (DGZ, PND, e outras que aparecerem nas planilhas).
 DICT_FORMA = {
     "AMP": "Cópia ampliada: impressão fotográfica com tamanho superior ao negativo original.",
     "CON": "Cópia por contato: impressão do mesmo tamanho do negativo, obtida por contato direto.",
@@ -300,6 +298,12 @@ DICT_FORMA = {
 # ============================================================
 # Funções utilitárias
 # ============================================================
+ROTULOS = {
+    "genero": {"AVS": "Audiovisual"},
+    "forma": {"MT0": "Matriz bruta", "MB0": "Original nato-digital automático"},
+}
+
+
 def descrever_sigla(sigla, tipo=None):
     """Retorna a descrição completa de uma sigla.
 
@@ -335,9 +339,7 @@ def rotular_sigla(sigla, tipo=None, mostrar_descricao=True):
     desc = descrever_sigla(s, tipo=tipo)
     if not desc or not mostrar_descricao:
         return s
-    # Corta na primeira frase para não poluir o menu
-    resumo = desc.split(":")[0].split(".")[0].strip()
-    return f"{s} — {resumo}"
+    return f"{rotulo_curto_sigla(s, tipo)} — {s.upper()}"
 
 def rotulo_curto_sigla(sigla, tipo=None):
     """Retorna apenas o rótulo curto da sigla, sem sigla e sem parênteses.
@@ -353,11 +355,13 @@ def rotulo_curto_sigla(sigla, tipo=None):
     if not sigla:
         return ""
     s = str(sigla).strip()
+    if tipo in ROTULOS and s.upper() in ROTULOS[tipo]:
+        return ROTULOS[tipo][s.upper()]
     desc = descrever_sigla(s, tipo=tipo)
     if not desc:
         return s
     # Corta no primeiro ":" (rótulo antes da explicação)
-    rotulo = desc.split(":", 1)[0].strip()
+    rotulo = re.split(r"\s*\(ex\.?", desc, maxsplit=1)[0].split(":", 1)[0].strip()
     # Remove parênteses do tipo "(abrangente)", "(sem especificação)"
     rotulo = re.sub(r"\s*\([^)]*\)\s*", " ", rotulo).strip()
     # Colapsa espaços duplos

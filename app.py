@@ -1,29 +1,15 @@
-import os
 from pathlib import Path
 from data_logic import load_collection, metadata_count
 from analysis_ui import render_analysis
 import re
 import unicodedata
-from collections import Counter
 from datetime import datetime
 
-import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.express as px
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
-from wordcloud import WordCloud
 
-from vocabulario_controlado import (
-    DICT_ESPECIE,
-    DICT_FORMA,
-    DICT_GENERO,
-    DICT_TECNICA,
-    descrever_sigla,
-    rotular_sigla,
-    rotulo_curto_sigla,
-)
 
 
 # ============================================================
@@ -72,46 +58,6 @@ st.set_page_config(
     layout="wide",
     page_title="Inventário e estatísticas de coleções",
 )
-
-
-# ============================================================
-# SISTEMA DE SEGURANÇA (PORTA TRANCADA)
-# ============================================================
-def check_password():
-    def password_entered():
-        if st.session_state.get("input_senha") == st.secrets["senha_porta"]:
-            st.session_state["password_correct"] = True
-        else:
-            st.session_state["password_correct"] = False
-
-    titulo_login = (
-        "<h3 style='text-align: center; "
-        "font-family: \"Cormorant Garamond\", serif; margin-top: 50px;'>"
-        "Acesso restrito - GPDVE</h3>"
-    )
-
-    if "password_correct" not in st.session_state:
-        st.markdown(titulo_login, unsafe_allow_html=True)
-        st.text_input(
-            "Digite a senha de acesso para carregar o acervo:",
-            type="password",
-            on_change=password_entered,
-            key="input_senha",
-        )
-        return False
-
-    if not st.session_state["password_correct"]:
-        st.markdown(titulo_login, unsafe_allow_html=True)
-        st.text_input(
-            "Digite a senha de acesso para carregar o acervo:",
-            type="password",
-            on_change=password_entered,
-            key="input_senha",
-        )
-        st.error("Senha incorreta. Acesso negado.")
-        return False
-
-    return True
 
 
 # ============================================================
@@ -205,7 +151,7 @@ def traduzir(texto_pt):
             ),
         },
         "Equipe do GPDVE": {"English": "GPDVE Team", "Español": "Equipo del GPDVE"},
-        "Lista de referência da equipe. Ative a atualização para consultar o site da FGV.": {
+        "Equipe do Grupo de Pesquisa em Direito e Violência de Estado.": {
             "English": (
                 "Data extracted in real-time from the official FGV Direito SP "
                 "website."
@@ -569,6 +515,20 @@ span[data-baseweb="tag"] span { color: white !important; }
     font-weight: 600;
     font-size: 0.94em;
 }
+.st-key-cat_sources [data-testid="stCheckbox"] p,
+.st-key-inic_sources [data-testid="stCheckbox"] p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: #7BC6CC;
+    font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.st-key-cat_sources .desc-lista,
+.st-key-inic_sources .desc-lista {
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
+}
 </style>
 """
 st.markdown(css_base, unsafe_allow_html=True)
@@ -594,7 +554,7 @@ def segredo(nome):
         return ""
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def buscar_producao_autoras(api_tokens, lista_autoras):
     from integrations import author_publications
     return author_publications(api_tokens, lista_autoras)
@@ -681,7 +641,7 @@ def extrair_equipe_fgv(consultar_online=False):
 # ============================================================
 # CABEÇALHO DO PROGRAMA
 # ============================================================
-# A senha só é exigida quando foi configurada nos segredos do Streamlit.
+# Acesso aberto, conforme solicitado pela responsável pelo aplicativo.
 st.session_state["app_language"] = idioma
 
 st.title(
@@ -713,10 +673,6 @@ base_catalogacao, base_iniciativas = carregar_e_cruzar_dados(arquivos_todos, pas
 total_metadados = metadata_count(base_catalogacao, "catalogue") + metadata_count(base_iniciativas, "initiatives")
 st.metric("Total de metadados preenchidos", f"{total_metadados:,}".replace(",", "."))
 st.caption(f"Soma dos campos de origem em {len(arquivos_todos)} bases: {len(base_catalogacao)} descrições documentais e {len(base_iniciativas)} registros mapeados. Campos internos e cópias derivadas não entram na soma. Os filtros abaixo alteram somente o recorte de cada aba.")
-pendencias = base_catalogacao.attrs.get("issues", [])
-if pendencias:
-    with st.expander(f"Conferir {len(pendencias)} pendências de importação e relacionamento"):
-        st.dataframe(pd.DataFrame(pendencias), hide_index=True, width="stretch")
 
 aba_inventario, aba_iniciativas, aba_producao, aba_equipe = st.tabs(
     [
@@ -1121,11 +1077,11 @@ with aba_producao:
 with aba_equipe:
     st.subheader(traduzir("Equipe do GPDVE"))
     st.markdown(
-        traduzir("Lista de referência da equipe. Ative a atualização para consultar o site da FGV.")
+        traduzir("Equipe do Grupo de Pesquisa em Direito e Violência de Estado.")
     )
 
     with st.spinner(traduzir("Extraindo informações da web...")):
-        lista_equipe = extrair_equipe_fgv(st.checkbox("Atualizar equipe a partir do site da FGV", value=False))
+        lista_equipe = extrair_equipe_fgv(True)
 
     colunas_equipe = st.columns(3)
     fatias_lista = [lista_equipe[:6], lista_equipe[6:12], lista_equipe[12:]]
@@ -1178,10 +1134,11 @@ with aba_equipe:
     ]
 
     with st.spinner(traduzir("Consultando o repositório...")):
-        df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas) if st.checkbox("Consultar publicações no Dataverse", value=False) else pd.DataFrame()
+        df_producao = buscar_producao_autoras(chaves_api, pesquisadoras_rastreadas)
 
-    for erro in df_producao.attrs.get("errors", []):
-        st.warning(erro)
+    aviso_repositorio = df_producao.attrs.get("notice", "")
+    if aviso_repositorio:
+        st.caption(aviso_repositorio)
 
     # Inserção manual da publicação de Viviane Balbuglio
     registro_manual = pd.DataFrame(
@@ -1257,6 +1214,3 @@ rodape_html = f"""
 </div>
 """
 st.markdown(rodape_html, unsafe_allow_html=True)
-with st.expander("Editar referência do programa"):
-    referencia = st.text_area("Referência para copiar", value=f"FRANCO, Millena Miranda. Inventário e estatísticas de coleções em Direito e Violência de Estado: gestão e visualização transversal de metadados arquivísticos. São Paulo: Escola de Direito de São Paulo, Fundação Getulio Vargas (FGV), 2026. Programa de computador. Acesso em: {data_formatada}.")
-    st.download_button("Baixar referência", referencia, "referencia-programa.txt", "text/plain")

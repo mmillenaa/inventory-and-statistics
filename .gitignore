@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 .streamlit/secrets.toml
+
+.cache/
+correcoes-inventory-and-statistics.zip
+.backup-correcoes/
