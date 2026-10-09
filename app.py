@@ -59,6 +59,9 @@ st.set_page_config(
     page_title="Inventário e estatísticas de coleções",
 )
 
+st.warning("🚧 Site em manutenção. Voltaremos em breve!")
+st.stop()
+
 
 # ============================================================
 # CONTROLES SUPERIORES E IDIOMA
