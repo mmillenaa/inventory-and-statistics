@@ -59,9 +59,56 @@ st.set_page_config(
     page_title="Inventário e estatísticas de coleções",
 )
 
-st.warning("🚧 Site em manutenção. Voltaremos em breve!")
-st.stop()
+st.markdown("""
+<style>
+.manutencao-tela {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #101820;
+    box-sizing: border-box;
+}
+.manutencao-card {
+    width: 100%;
+    max-width: 850px;
+    padding: clamp(32px, 7vw, 72px);
+    border: 3px solid #7BC6CC;
+    border-radius: 24px;
+    background: #192630;
+    text-align: center;
+    box-sizing: border-box;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+.manutencao-card h1 {
+    margin: 20px 0 !important;
+    color: #ffffff !important;
+    font-size: clamp(32px, 6vw, 64px) !important;
+    line-height: 1.15;
+    font-weight: 800;
+}
+.manutencao-card p {
+    margin: 0;
+    color: #dce8ed;
+    font-size: clamp(20px, 3vw, 28px);
+    line-height: 1.5;
+}
+</style>
 
+<div class="manutencao-tela">
+    <div class="manutencao-card" role="alert">
+        <div style="font-size: 72px;" aria-hidden="true">🚧</div>
+        <h1>SITE EM MANUTENÇÃO</h1>
+        <p>Estamos revisando os dados e aprimorando o sistema.<br>
+        Voltaremos em breve!</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.stop()
 
 # ============================================================
 # CONTROLES SUPERIORES E IDIOMA
