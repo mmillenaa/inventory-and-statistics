@@ -20,7 +20,9 @@ CSS = """
     font-family: 'Source Serif 4', Georgia, serif;
     font-size: .875rem; line-height: 1.55;
     color: var(--st-text-color, #e0d8c8);
-    text-align: left; overflow-wrap: anywhere;
+    text-align: justify;
+    text-align-last: left;
+    overflow-wrap: anywhere;
 }
 .source-paragraph label { display: inline; cursor: pointer; }
 .source-paragraph input {
