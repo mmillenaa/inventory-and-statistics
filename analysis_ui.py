@@ -8,10 +8,11 @@ import plotly.express as px
 import streamlit as st
 from wordcloud import WordCloud
 
-from data_logic import (CATEGORIES, category_options, display_table,
+from data_logic import (CAT_FIELDS, INI_FIELDS, CATEGORIES, category_options, display_table,
                         faceted_options, filter_categories, metadata_count,
                         phrase_frequency, reconcile_filters, search_matches,
-                        search_records, values_of, year_frequency)
+                        search_records, values_of, year_frequency, record_frequency,
+                        cross_frequency, clean)
 from vocabulario_controlado import rotulo_curto_sigla
 
 CATEGORY_TYPES = {**dict(zip(CATEGORIES, ("genero", "especie", "tecnica", "forma"))),
@@ -29,6 +30,19 @@ def category_label(value, field, with_code=False):
     name = rotulo_curto_sigla(value, tipo=CATEGORY_TYPES.get(field))
     name = re.split(r"\s*\(ex\.?", name, maxsplit=1)[0].rstrip(" .,")
     return f"{name} — {value}" if with_code and name != value else name
+
+
+def analysis_fields(kind, frame):
+    fields = list(CATEGORIES) + list(CAT_FIELDS) if kind == "catalogue" else list(INI_FIELDS)
+    return [field for field in fields if field in frame and category_options(frame, field)]
+
+
+def labeled_fields(frame, fields):
+    result = frame.copy()
+    for field in fields:
+        if field in CATEGORY_TYPES:
+            result[field] = frame[field].map(lambda value, field=field: tuple(category_label(v, field) for v in values_of(value)))
+    return result
 
 
 def _reset(prefix, signature):
@@ -56,6 +70,10 @@ def _clear_search(frame, fields, prefix):
 
 def _source_note(kind, fields, frame):
     if not fields:
+        return
+    if kind == "catalogue" and any(field in CATEGORIES for field in fields) and not all(field in CATEGORIES for field in fields):
+        _source_note(kind, [field for field in fields if field in CATEGORIES], frame)
+        _source_note(kind, [field for field in fields if field not in CATEGORIES], frame)
         return
     layouts = frame.attrs.get("source_columns", {})
     if kind == "initiatives":
@@ -143,6 +161,7 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
     views = ["Nenhuma visualização (limpar tela)", "Linha do tempo (distribuição cronológica)", "Frequências categoriais", "Nuvem de palavras"]
     if kind == "catalogue":
         views.append("Frequências temáticas")
+    views.append("Cruzar dois campos")
     visualization = st.selectbox("Escolha uma visualização", views, key=prefix+"view")
     if filtered.empty:
         st.info("Nenhum registro corresponde à busca. Limpe ou ajuste o termo pesquisado.")
@@ -157,26 +176,30 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
             st.plotly_chart(fig, width="stretch")
             st.dataframe(frequency, hide_index=True, width="stretch")
     elif visualization == views[2]:
-        available_fields = [field for field in fields if category_options(filtered, field)]
+        available_fields = analysis_fields(kind, filtered)
         if available_fields:
-            field = st.selectbox("Campo da frequência", available_fields, key=prefix+"frequency_field")
+            field = st.selectbox("Campo da frequência", available_fields, key=prefix+"frequency_field", format_func=lambda value: FIELD_NAMES.get(value,value))
             _source_note(kind, [field], filtered)
-            counts = {value: len(filter_categories(filtered, {field: [value]})) for value in category_options(filtered, field)}
-            frequency = pd.DataFrame([{"Categoria": category_label(value, field) if kind == "catalogue" else value, "Registros": count} for value, count in counts.items()])
+            frequency = record_frequency(labeled_fields(filtered, [field]), field)
+            missing = int(filtered[field].map(lambda value: not any(clean(v) for v in values_of(value))).sum())
             st.caption("Cada registro conta uma vez por categoria. Um registro com várias categorias pode entrar em mais de uma barra.")
+            st.caption(f"Registros sem valor neste campo: {missing}. Campos textuais contam o conteúdo de cada célula como uma categoria.")
             st.dataframe(frequency, hide_index=True, width="stretch")
-            st.plotly_chart(px.bar(frequency, x="Categoria", y="Registros"), width="stretch")
+            if len(frequency)>30:
+                st.caption("O gráfico mostra as 30 categorias mais frequentes. A tabela e o CSV incluem todas.")
+            st.plotly_chart(px.bar(frequency.head(30), x="Categoria", y="Registros"), width="stretch")
+            st.download_button("Baixar frequências CSV",frequency.to_csv(index=False).encode("utf-8-sig"),"frequencias.csv","text/csv",key=prefix+"frequency_csv")
         else:
             st.info("Os registros deste recorte não têm classificações preenchidas para este gráfico.")
     elif visualization == views[3]:
-        options = ["Título (Busca)", "Conteúdo (Busca)", "Palavras-chave"] if kind == "catalogue" else INITIATIVE_CLOUD_FIELDS
-        options = [field for field in options if field in filtered]
+        options = analysis_fields(kind, filtered)
+        defaults = ["Título (Busca)", "Conteúdo (Busca)", "Palavras-chave"] if kind == "catalogue" else INITIATIVE_CLOUD_FIELDS
         key = prefix+"cloud_fields"
         if key in st.session_state:
             st.session_state[key] = [field for field in st.session_state[key] if field in options]
-        chosen = st.multiselect("O que deve conter?", options, default=options if key not in st.session_state else None, key=key, format_func=lambda field: FIELD_NAMES.get(field, field))
+        chosen = st.multiselect("O que deve conter?", options, default=[f for f in defaults if f in options] if key not in st.session_state else None, key=key, format_func=lambda field: FIELD_NAMES.get(field, field))
         _source_note(kind, chosen, filtered)
-        combined, detail = phrase_frequency(filtered, chosen)
+        combined, detail = phrase_frequency(labeled_fields(filtered, chosen), chosen)
         st.caption("Frequência somada nos campos selecionados. Vírgulas separam termos; espaços preservam nomes e expressões completas.")
         if combined:
             try:
@@ -192,6 +215,24 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
             st.dataframe(detail.sort_values("Frequência", ascending=False), hide_index=True, width="stretch")
         else:
             st.info("Selecione campos com termos preenchidos para gerar a nuvem.")
+    elif visualization == "Cruzar dois campos":
+        available_fields = analysis_fields(kind, filtered)
+        if len(available_fields)<2:
+            st.info("Este recorte precisa ter pelo menos dois campos preenchidos para o cruzamento.")
+        else:
+            left,right = st.columns(2)
+            row_field = left.selectbox("Campo das linhas",available_fields,key=prefix+"cross_rows",format_func=lambda value:FIELD_NAMES.get(value,value))
+            column_fields = [f for f in available_fields if f!=row_field]
+            if st.session_state.get(prefix+"cross_columns") not in column_fields:
+                st.session_state[prefix+"cross_columns"] = column_fields[0]
+            column_field = right.selectbox("Campo das colunas",column_fields,key=prefix+"cross_columns",format_func=lambda value:FIELD_NAMES.get(value,value))
+            _source_note(kind,[row_field,column_field],filtered)
+            frequency = cross_frequency(labeled_fields(filtered,[row_field,column_field]),row_field,column_field)
+            complete = sum(bool(values_of(a)) and bool(values_of(b)) for a,b in zip(filtered[row_field],filtered[column_field]))
+            st.caption(f"Registros com os dois campos preenchidos: {complete}. Sem um dos campos: {len(filtered)-complete}. Cada registro conta uma vez por combinação; múltiplas categorias podem produzir mais de uma combinação.")
+            frequency = frequency.rename(columns=FIELD_NAMES)
+            st.dataframe(frequency,hide_index=True,width="stretch")
+            st.download_button("Baixar cruzamento CSV",frequency.to_csv(index=False).encode("utf-8-sig"),"cruzamento.csv","text/csv",key=prefix+"cross_csv")
     elif visualization == "Frequências temáticas":
         themes = {"Família":["mãe", "filho", "criança", "pai", "avó"], "Educação, artes e ofícios":["escola", "alfabetização", "atividade cultural", "costura"], "Arquitetura prisional":["grade", "cela", "pavilhão", "parede", "portão"]}
         theme = st.selectbox("Tema", list(themes), key=prefix+"theme")

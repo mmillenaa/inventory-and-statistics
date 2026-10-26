@@ -1,0 +1,63 @@
+test_all_fields_frequencies_and_crossed_counts (test_app.InterfaceTests.test_all_fields_frequencies_and_crossed_counts) ... 2026-10-26 15:34:23.218 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_all_frequency_fields_use_words_in_graph_tables (test_app.InterfaceTests.test_all_frequency_fields_use_words_in_graph_tables) ... 2026-10-26 15:34:34.651 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_change_files_resets_filters (test_app.InterfaceTests.test_change_files_resets_filters) ... 2026-10-26 15:34:40.419 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_empty_cloud_selection_and_no_match_do_not_crash (test_app.InterfaceTests.test_empty_cloud_selection_and_no_match_do_not_crash) ... 2026-10-26 15:34:42.427 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_empty_inventory_keeps_other_tab (test_app.InterfaceTests.test_empty_inventory_keeps_other_tab) ... 2026-10-26 15:34:47.534 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_global_metric_and_real_filter (test_app.InterfaceTests.test_global_metric_and_real_filter) ... 2026-10-26 15:34:48.634 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_intervention_uses_actual_field_and_regular_multiselect (test_app.InterfaceTests.test_intervention_uses_actual_field_and_regular_multiselect) ... 2026-10-26 15:34:49.931 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_inventory_counts_descriptions_without_unit_switch (test_app.InterfaceTests.test_inventory_counts_descriptions_without_unit_switch) ... 2026-10-26 15:34:51.757 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_legacy_password_does_not_restrict_access (test_app.InterfaceTests.test_legacy_password_does_not_restrict_access) ... 2026-10-26 15:34:53.249 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-26 15:34:53.951 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_mapping_filters_follow_other_selections (test_app.InterfaceTests.test_mapping_filters_follow_other_selections) ... 2026-10-26 15:34:54.890 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_original_description_style_and_removed_controls (test_app.InterfaceTests.test_original_description_style_and_removed_controls) ... 2026-10-26 15:34:56.626 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_search_change_reconciles_existing_filters (test_app.InterfaceTests.test_search_change_reconciles_existing_filters) ... 2026-10-26 15:34:57.390 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_search_sources_clear_button_and_hidden_internal_fields (test_app.InterfaceTests.test_search_sources_clear_button_and_hidden_internal_fields) ... 2026-10-26 15:35:00.115 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_source_checkbox_stays_off_until_selected_again (test_app.InterfaceTests.test_source_checkbox_stays_off_until_selected_again) ... 2026-10-26 15:35:05.060 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_timeline_cloud_and_export (test_app.InterfaceTests.test_timeline_cloud_and_export) ... 2026-10-26 15:35:09.103 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_classifications_and_multiple_filter_options (test_data_logic.CollectionTests.test_classifications_and_multiple_filter_options) ... ok
+test_complete_phrases_and_cloud_columns (test_data_logic.CollectionTests.test_complete_phrases_and_cloud_columns) ... ok
+test_controlled_vocabulary_covers_every_source_category (test_data_logic.CollectionTests.test_controlled_vocabulary_covers_every_source_category) ... ok
+test_cross_counts_unique_records_and_ignores_missing_cells (test_data_logic.CollectionTests.test_cross_counts_unique_records_and_ignores_missing_cells) ... ok
+test_dataverse_paginates (test_data_logic.CollectionTests.test_dataverse_paginates) ... ok
+test_facets_exclude_impossible_categories (test_data_logic.CollectionTests.test_facets_exclude_impossible_categories) ... ok
+test_invisible_formatting_does_not_create_data (test_data_logic.CollectionTests.test_invisible_formatting_does_not_create_data) ... ok
+test_mapping_titles_dates_and_separate_purpose (test_data_logic.CollectionTests.test_mapping_titles_dates_and_separate_purpose) ... ok
+test_metadata_count_independently_from_excel_cell_positions (test_data_logic.CollectionTests.test_metadata_count_independently_from_excel_cell_positions) ... ok
+test_metadata_excludes_technical_fields (test_data_logic.CollectionTests.test_metadata_excludes_technical_fields) ... ok
+test_ndt_is_present_in_source_and_every_representation_has_one_description (test_data_logic.CollectionTests.test_ndt_is_present_in_source_and_every_representation_has_one_description) ... ok
+test_new_search_removes_conflicting_filter (test_data_logic.CollectionTests.test_new_search_removes_conflicting_filter) ... ok
+test_no_selection_is_valid (test_data_logic.CollectionTests.test_no_selection_is_valid) ... ok
+test_phrase_search_and_numbers (test_data_logic.CollectionTests.test_phrase_search_and_numbers) ... ok
+test_preserves_conflicting_descriptions_and_representation_units (test_data_logic.CollectionTests.test_preserves_conflicting_descriptions_and_representation_units) ... ok
+test_search_reports_actual_fields_and_hides_internal_columns (test_data_logic.CollectionTests.test_search_reports_actual_fields_and_hides_internal_columns) ... ok
+test_source_positions_follow_both_spreadsheet_structures (test_data_logic.CollectionTests.test_source_positions_follow_both_spreadsheet_structures) ... ok
+test_temporal_coverage_and_zero_years (test_data_logic.CollectionTests.test_temporal_coverage_and_zero_years) ... ok
+test_invalid_json_schema_does_not_look_like_success (test_integrations.DataverseTests.test_invalid_json_schema_does_not_look_like_success) ... ok
+test_partial_outage_preserves_other_repository (test_integrations.DataverseTests.test_partial_outage_preserves_other_repository) ... Observatório: SciELO — HTTP 403
+ok
+test_public_search_ignores_expired_tokens_and_batches_authors (test_integrations.DataverseTests.test_public_search_ignores_expired_tokens_and_batches_authors) ... ok
+test_rejects_incidental_name_mentions_and_checks_author_metadata (test_integrations.DataverseTests.test_rejects_incidental_name_mentions_and_checks_author_metadata) ... ok
+test_search_requests_only_published_versions (test_integrations.DataverseTests.test_search_requests_only_published_versions) ... ok
+test_source_outage_keeps_last_success_and_avoids_author_error_list (test_integrations.DataverseTests.test_source_outage_keeps_last_success_and_avoids_author_error_list) ... Observatório: FGV — Timeout
+Observatório: SciELO — Timeout
+ok
+
+----------------------------------------------------------------------
+Ran 39 tests in 54.768s
+
+OK

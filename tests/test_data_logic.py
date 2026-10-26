@@ -7,6 +7,7 @@ from data_logic import (load_collection, category_options, filter_categories,
                         metadata_count, phrase_frequency, search_records, search_matches, year_frequency, CATEGORIES,
                         reconcile_filters, faceted_options, display_table)
 from integrations import search_dataverse
+from data_logic import clean, cross_frequency, record_frequency
 
 
 class CollectionTests(unittest.TestCase):
@@ -66,6 +67,22 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(counts["2025"],2)
         self.assertEqual(detail.Frequência.sum(),5)
         self.assertEqual(phrase_frequency(frame,[])[0],{})
+
+    def test_cross_counts_unique_records_and_ignores_missing_cells(self):
+        frame=pd.DataFrame({"Gênero":[("ICO","ICO"),("AVS",),(),("ICO",)],
+                            "Forma":[("MT0",),("DT1","DTX"),("MT0",),()]})
+        cross=cross_frequency(frame,"Gênero","Forma")
+        self.assertEqual(cross.to_dict("records"),[
+            {"Gênero":"ICO","Forma":"MT0","Registros":1},
+            {"Gênero":"AVS","Forma":"DT1","Registros":1},
+            {"Gênero":"AVS","Forma":"DTX","Registros":1}])
+        self.assertEqual(record_frequency(frame,"Gênero").to_dict("records"),[
+            {"Categoria":"ICO","Registros":2},{"Categoria":"AVS","Registros":1}])
+        self.assertEqual(phrase_frequency(pd.DataFrame({"Forma":[("Matriz bruta",),("Matriz bruta",)]}),["Forma"])[0],{"Matriz bruta":2})
+
+    def test_invisible_formatting_does_not_create_data(self):
+        self.assertEqual(clean("\u200b\ufeff "),"")
+        self.assertEqual(clean("\ufeffMatriz\xa0bruta "),"Matriz bruta")
 
     def test_temporal_coverage_and_zero_years(self):
         frequency, dated, undated = year_frequency(self.cat,"Data (Busca)")

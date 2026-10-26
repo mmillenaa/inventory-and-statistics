@@ -1,0 +1,8 @@
+{
+  "analysis_ui.py": "8f1f5a16fa2761631e03503a1dfaf5bc6236023fbee92b7b55388009cca67b9b",
+  "data_logic.py": "c4a7e9c460287a4875a911b52d501121f6446fd3a1cdc324f2d04410c6f65e42",
+  "auditar_planilhas.py": null,
+  "reabrir_app.py": null,
+  "tests/test_app.py": "860f8484254a416a245a9c343612400eca96075e045ef212ebd4f0f67e8aada1",
+  "tests/test_data_logic.py": "51aef20fb8da6c3fafb4c9a1afa25e614ba2327677c09eeba5dc0dd1db3fc127"
+}

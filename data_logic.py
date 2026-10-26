@@ -55,7 +55,8 @@ def clean(value):
         return ""
     if isinstance(value, (int, float)) and float(value).is_integer():
         return str(int(value))
-    text = re.sub(r"\s+", " ", str(value)).strip()
+    text = re.sub(r"[\u200b-\u200d\u2060\ufeff]", "", str(value))
+    text = re.sub(r"\s+", " ", text).strip()
     return "" if normalize(text) in MISSING or text in EXCEL_ERRORS else text
 
 
@@ -283,17 +284,39 @@ def phrase_frequency(frame, fields):
     counts, labels, per_field = Counter(), {}, Counter()
     for field in fields:
         for value in frame[field]:
-            for part in re.split(r"[,;\n\r]+", clean(value)):
-                label = clean(part).strip(" .-")
-                key = normalize(label)
-                if not label or key in {"de", "a", "o", "e", "do", "da", "em", "para"}:
-                    continue
-                labels.setdefault(key, label)
-                counts[key] += 1
-                per_field[(field, key)] += 1
+            for item in values_of(value):
+                for part in re.split(r"[,;\n\r]+", clean(item)):
+                    label = clean(part).strip(" .-")
+                    key = normalize(label)
+                    if not label or key in {"de", "a", "o", "e", "do", "da", "em", "para"}:
+                        continue
+                    labels.setdefault(key, label)
+                    counts[key] += 1
+                    per_field[(field, key)] += 1
     combined = {labels[k]: v for k, v in counts.items()}
     detail = pd.DataFrame([{"Campo": field, "Termo": labels[key], "Frequência": n} for (field, key), n in per_field.items()], columns=["Campo", "Termo", "Frequência"])
     return combined, detail
+
+
+def record_frequency(frame, field):
+    """Conta registros, deduplicando categorias repetidas dentro do mesmo registro."""
+    counts = Counter()
+    for value in frame[field]:
+        counts.update(set(clean(v) for v in values_of(value) if clean(v)))
+    return pd.DataFrame([{"Categoria": value, "Registros": count} for value, count in counts.most_common()],
+                        columns=["Categoria", "Registros"])
+
+
+def cross_frequency(frame, row_field, column_field):
+    """Uma contribuição por par de categorias e por registro, sem transformar vazio em zero."""
+    counts = Counter()
+    for row_value, column_value in zip(frame[row_field], frame[column_field]):
+        rows = set(clean(v) for v in values_of(row_value) if clean(v))
+        columns = set(clean(v) for v in values_of(column_value) if clean(v))
+        counts.update((row, column) for row in sorted(rows) for column in sorted(columns))
+    return pd.DataFrame([{row_field:row, column_field:column, "Registros":n}
+                         for (row,column),n in counts.most_common()],
+                        columns=[row_field,column_field,"Registros"])
 
 
 def display_table(frame):

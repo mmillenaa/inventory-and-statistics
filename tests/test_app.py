@@ -62,12 +62,32 @@ class InterfaceTests(unittest.TestCase):
         self.assertHealthy()
         self.app.selectbox(key="inic_view").set_value("Nuvem de palavras").run()
         self.assertHealthy()
-        self.assertEqual(self.app.multiselect(key="inic_cloud_fields").options,["Nome da iniciativa", "Ano", "Fonte/Origem", "Proponente"])
+        options=self.app.multiselect(key="inic_cloud_fields").options
+        self.assertTrue(set(["Nome da iniciativa", "Ano", "Fonte/Origem", "Proponente", "Título do documento", "Técnica de registro"]).issubset(options))
+        self.assertGreater(len(options),4)
         self.assertTrue(any("Ano (G)" in e.value and "Ano (H)" in e.value and "Fonte/Origem (M)" in e.value and "Fonte/Origem (N)" in e.value for e in self.app.caption))
         self.app.multiselect(key="inic_cloud_fields").set_value(["Ano","Proponente"]).run()
         self.assertHealthy()
         self.assertFalse(any("Word" in e.label for e in self.app.button))
         self.assertTrue(any(e.key == "inic_csv" for e in self.app.get("download_button")))
+
+    def test_all_fields_frequencies_and_crossed_counts(self):
+        self.app.selectbox(key="cat_view").set_value("Frequências categoriais").run()
+        self.app.selectbox(key="cat_frequency_field").set_value("Forma documental").run()
+        self.assertHealthy()
+        frequency=next(e.value for e in self.app.dataframe if "Categoria" in e.value)
+        self.assertEqual(int(frequency.Registros.sum()),348)
+        self.app.selectbox(key="cat_view").set_value("Cruzar dois campos").run()
+        self.app.selectbox(key="cat_cross_columns").set_value("Forma documental").run()
+        self.assertHealthy()
+        cross=next(e.value for e in self.app.dataframe if {"Gênero documental","Forma documental","Registros"}.issubset(e.value.columns))
+        self.assertEqual(int(cross.Registros.sum()),348)
+        self.app.selectbox(key="cat_view").set_value("Nuvem de palavras").run()
+        self.app.multiselect(key="cat_cloud_fields").set_value(["Forma documental"]).run()
+        self.assertHealthy()
+        detail=next(e.value for e in self.app.dataframe if {"Campo","Termo","Frequência"}.issubset(e.value.columns))
+        self.assertIn("Matriz bruta",detail.Termo.tolist())
+        self.assertNotIn("MT0",detail.Termo.tolist())
 
     def test_intervention_uses_actual_field_and_regular_multiselect(self):
         control = self.app.multiselect(key="inic_Intervenção")
