@@ -515,124 +515,58 @@ span[data-baseweb="tag"] span { color: white !important; }
     font-size: 0.94em;
 }
 /* ============================================================ */
-/* CHECKBOX + NOME + DESCRIÇÃO EM UM ÚNICO BLOCO CONTÍNUO       */
-/* Sem quebra de linha, sem truncamento, sem barras visíveis    */
+/* BLOCO DE TEXTO ÚNICO CONTÍNUO COM CHECKBOX INLINE            */
 /* ============================================================ */
 
-/* Container: rola na horizontal, mas esconde a barra de rolagem */
-.st-key-cat_sources,
-.st-key-inic_sources {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;      /* Firefox */
-    -ms-overflow-style: none !important;   /* IE/Edge */
-    border: none !important;
-    outline: none !important;
-}
-.st-key-cat_sources::-webkit-scrollbar,
-.st-key-inic_sources::-webkit-scrollbar {
-    display: none !important;              /* Chrome/Safari */
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* O bloco vertical vira UMA linha horizontal contínua */
-.st-key-cat_sources > [data-testid="stVerticalBlock"],
-.st-key-inic_sources > [data-testid="stVerticalBlock"] {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 0 !important;
+/* 1. O container principal age como um parágrafo de texto */
+.st-key-cat_sources [data-testid="stVerticalBlock"],
+.st-key-inic_sources [data-testid="stVerticalBlock"] {
+    display: block !important;
+    line-height: 1.6 !important;
     margin: 0 !important;
-    border: none !important;
-    outline: none !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
+    padding: 0 !important;
 }
 
-/* Cada filho (checkbox, descrição) com largura natural, sem encolher */
-.st-key-cat_sources > [data-testid="stVerticalBlock"] > *,
-.st-key-inic_sources > [data-testid="stVerticalBlock"] > * {
-    flex: 0 0 auto !important;
+/* 2. As caixas invisíveis do Streamlit viram texto inline */
+.st-key-cat_sources [data-testid="stElementContainer"],
+.st-key-inic_sources [data-testid="stElementContainer"] {
+    display: inline !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    padding: 0 !important;
     width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    outline: none !important;
 }
 
-/* Checkbox: só o quadradinho, sem barra/borda/margem */
+/* 3. O checkbox flutua perfeitamente no meio do texto, sem empurrar */
 .st-key-cat_sources [data-testid="stCheckbox"],
 .st-key-inic_sources [data-testid="stCheckbox"] {
-    flex: 0 0 auto !important;
-    min-width: auto !important;
-    margin: 0 !important;
+    display: inline-flex !important;
+    vertical-align: middle !important;
+    margin: 0 4px 0 0 !important;
     padding: 0 !important;
-    border: none !important;
-    outline: none !important;
-}
-.st-key-cat_sources [data-testid="stCheckbox"] > label,
-.st-key-inic_sources [data-testid="stCheckbox"] > label {
-    border: none !important;
-    outline: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 4px !important;
-    white-space: nowrap !important;
 }
 
-/* Label do checkbox: nowrap absoluto, sem ellipsis, sem borda */
-.st-key-cat_sources [data-testid="stCheckbox"] p,
-.st-key-inic_sources [data-testid="stCheckbox"] p {
-    font-family: 'IBM Plex Mono', monospace !important;
-    font-size: 0.85rem !important;
-    color: #7BC6CC !important;
-    font-weight: 600 !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    overflow-wrap: normal !important;
-    word-break: keep-all !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: inline !important;
-    border: none !important;
-    outline: none !important;
-}
-
-/* Descrição: mesmo tratamento, no mesmo bloco contínuo */
+/* 4. A descrição flui como texto normal */
 .st-key-cat_sources .desc-lista,
 .st-key-inic_sources .desc-lista {
     display: inline !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    overflow-wrap: normal !important;
-    word-break: keep-all !important;
+    margin: 0 16px 0 0 !important; /* Espaço entre um arquivo e outro */
     padding: 0 !important;
-    margin: 0 8px 0 0 !important;
-    border: none !important;
-    outline: none !important;
-    font-size: 0.85rem !important;
-    line-height: 1.4 !important;
+    white-space: normal !important;
 }
 
-/* Remove o <br> entre nome do arquivo e descrição (era ele que quebrava) */
+/* 5. O nome do arquivo não pode quebrar no meio (ex: BR-SPAPESP...) */
+.st-key-cat_sources .desc-lista .desc-nome,
+.st-key-inic_sources .desc-lista .desc-nome {
+    white-space: nowrap !important;
+    display: inline-block !important;
+    margin-right: 4px !important;
+}
+
+/* 6. Esmaga qualquer tag <br> que tente forçar quebra de linha */
 .st-key-cat_sources .desc-lista br,
 .st-key-inic_sources .desc-lista br {
     display: none !important;
-}
-
-/* Só um espacinho entre nome do arquivo e descrição, sem quebrar */
-.st-key-cat_sources .desc-lista .desc-nome,
-.st-key-inic_sources .desc-lista .desc-nome {
-    margin-right: 6px !important;
-    white-space: nowrap !important;
-    display: inline !important;
 }
 </style>
 """
