@@ -514,29 +514,76 @@ span[data-baseweb="tag"] span { color: white !important; }
     font-weight: 600;
     font-size: 0.94em;
 }
+/* ============================================================ */
+/* CHECKBOX + NOME + DESCRIÇÃO EM LINHA ÚNICA (sem quebra)     */
+/* ============================================================ */
+
+/* Container: rolagem horizontal quando o texto for muito longo */
+.st-key-cat_sources,
+.st-key-inic_sources {
+    overflow-x: auto !important;
+}
+
+/* Cada par checkbox + descrição vira UMA linha horizontal */
+.st-key-cat_sources [data-testid="stVerticalBlock"],
+.st-key-inic_sources [data-testid="stVerticalBlock"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;     /* ← nunca quebra */
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+}
+
+/* Checkbox: tamanho natural, não encolhe, sem margem */
+.st-key-cat_sources [data-testid="stCheckbox"],
+.st-key-inic_sources [data-testid="stCheckbox"] {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Label do checkbox em linha única */
 .st-key-cat_sources [data-testid="stCheckbox"] p,
 .st-key-inic_sources [data-testid="stCheckbox"] p {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.85rem;
     color: #7BC6CC;
     font-weight: 600;
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
-.st-key-cat_sources .desc-lista,
-.st-key-inic_sources .desc-lista {
-    margin-bottom: 8px;
-    overflow-wrap: anywhere;
-}
-.st-key-cat_sources,
-.st-key-inic_sources,
-.st-key-cat_sources [data-testid="stVerticalBlock"],
-.st-key-inic_sources [data-testid="stVerticalBlock"] {
-    gap: 0 !important;
-}
-.st-key-cat_sources .desc-lista,
-.st-key-inic_sources .desc-lista {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    word-break: keep-all !important;
     margin: 0 !important;
+}
+
+/* Descrição (nome + texto) na mesma linha, corta com "…" se estourar */
+.st-key-cat_sources .desc-lista,
+.st-key-inic_sources .desc-lista {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+    font-size: 0.85rem !important;
+    line-height: 1.3 !important;
+}
+
+/* Remove a quebra de linha entre o nome do arquivo e a descrição */
+.st-key-cat_sources .desc-lista br,
+.st-key-inic_sources .desc-lista br {
+    display: none !important;
+}
+
+/* Espaço visual entre o nome do arquivo e a descrição */
+.st-key-cat_sources .desc-lista .desc-nome,
+.st-key-inic_sources .desc-lista .desc-nome {
+    margin-right: 8px !important;
 }
 </style>
 """
