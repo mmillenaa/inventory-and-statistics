@@ -518,55 +518,52 @@ span[data-baseweb="tag"] span { color: white !important; }
 /* BLOCO DE TEXTO ÚNICO CONTÍNUO COM CHECKBOX INLINE            */
 /* ============================================================ */
 
-/* 1. O container principal age como um parágrafo de texto */
-.st-key-cat_sources [data-testid="stVerticalBlock"],
-.st-key-inic_sources [data-testid="stVerticalBlock"] {
+<style>
+/* 1. Alvo no container específico usando a key do Streamlit */
+.st-key-bloco_continuo [data-testid="stVerticalBlock"] {
     display: block !important;
+    text-align: justify !important;
     line-height: 1.6 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    padding: 10px !important;
+    background: rgba(80, 120, 160, 0.06);
+    border-radius: 8px;
+    border: 1px solid rgba(120,120,120,0.18);
 }
 
-/* 2. As caixas invisíveis do Streamlit viram texto inline */
-.st-key-cat_sources [data-testid="stElementContainer"],
-.st-key-inic_sources [data-testid="stElementContainer"] {
+/* 2. Força os wrappers dos checkboxes a ficarem na mesma linha */
+.st-key-bloco_continuo [data-testid="stElementContainer"] {
     display: inline !important;
-    vertical-align: middle !important;
-    margin: 0 !important;
-    padding: 0 !important;
     width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* 3. O checkbox flutua perfeitamente no meio do texto, sem empurrar */
-.st-key-cat_sources [data-testid="stCheckbox"],
-.st-key-inic_sources [data-testid="stCheckbox"] {
+/* 3. Ajusta o checkbox em si para fluir com o texto */
+.st-key-bloco_continuo [data-testid="stCheckbox"] {
     display: inline-flex !important;
-    vertical-align: middle !important;
-    margin: 0 4px 0 0 !important;
-    padding: 0 !important;
+    align-items: baseline !important;
+    margin-right: 12px !important; /* Espaço entre o fim de uma descrição e o próximo checkbox */
 }
 
-/* 4. A descrição flui como texto normal */
-.st-key-cat_sources .desc-lista,
-.st-key-inic_sources .desc-lista {
+/* 4. Formatação do texto contínuo */
+.st-key-bloco_continuo [data-testid="stCheckbox"] label {
     display: inline !important;
-    margin: 0 16px 0 0 !important; /* Espaço entre um arquivo e outro */
-    padding: 0 !important;
-    white-space: normal !important;
+    white-space: normal !important; 
 }
 
-/* 5. O nome do arquivo não pode quebrar no meio (ex: BR-SPAPESP...) */
-.st-key-cat_sources .desc-lista .desc-nome,
-.st-key-inic_sources .desc-lista .desc-nome {
-    white-space: nowrap !important;
-    display: inline-block !important;
+.st-key-bloco_continuo [data-testid="stCheckbox"] label span {
+    font-family: 'Source Serif 4', serif !important;
+    font-size: 0.95rem !important;
+    color: rgba(250, 250, 250, 0.85) !important;
+}
+
+/* 5. Diferenciação tipográfica para o nome do arquivo (usando negrito no Markdown) */
+.st-key-bloco_continuo [data-testid="stCheckbox"] label span strong {
+    font-family: 'IBM Plex Mono', monospace !important;
+    color: #7BC6CC !important;
+    font-weight: 600 !important;
+    font-size: 0.94em !important;
     margin-right: 4px !important;
-}
-
-/* 6. Esmaga qualquer tag <br> que tente forçar quebra de linha */
-.st-key-cat_sources .desc-lista br,
-.st-key-inic_sources .desc-lista br {
-    display: none !important;
 }
 </style>
 """
