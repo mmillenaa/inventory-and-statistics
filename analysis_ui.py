@@ -1,5 +1,4 @@
 """Interface das duas áreas de análise; os cálculos ficam em data_logic."""
-from html import escape
 import re
 
 import matplotlib.pyplot as plt
@@ -14,6 +13,98 @@ from data_logic import (CAT_FIELDS, INI_FIELDS, CATEGORIES, category_options, di
                         search_records, values_of, year_frequency, record_frequency,
                         cross_frequency, clean)
 from vocabulario_controlado import rotulo_curto_sigla
+HTML = '<p class="source-paragraph" role="group" aria-label="Planilhas incluídas na análise"></p>'
+CSS = """
+.source-paragraph {
+    margin: 0; padding: 0;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: .875rem; line-height: 1.55;
+    color: var(--st-text-color, #e0d8c8);
+    text-align: left; overflow-wrap: anywhere;
+}
+.source-paragraph label { display: inline; cursor: pointer; }
+.source-paragraph input {
+    width: .85rem; height: .85rem; padding: 0;
+    margin: 0 .28em 0 0; vertical-align: -.08em;
+    accent-color: #5ca6b8; cursor: pointer;
+}
+.source-paragraph input:focus-visible {
+    outline: 2px solid #7bc6cc; outline-offset: 2px;
+}
+.source-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .94em; font-weight: 600;
+    color: #7bc6cc; overflow-wrap: anywhere;
+}
+.source-description { display: inline; }
+"""
+JS = """
+export default function ({parentElement, data, setStateValue}) {
+    const paragraph = parentElement.querySelector('.source-paragraph');
+    const items = data.items || [];
+    const signature = JSON.stringify(items);
+    // Mantém os mesmos inputs nos reruns, inclusive foco e navegação pelo teclado.
+    if (paragraph.dataset.items !== signature) {
+        paragraph.replaceChildren();
+        for (const [index, item] of items.entries()) {
+            if (index) paragraph.append(document.createTextNode(' '));
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = item.name;
+            checkbox.setAttribute('aria-label', item.name);
+            const name = document.createElement('span');
+            name.className = 'source-name';
+            name.textContent = item.name;
+            label.append(checkbox, name);
+            paragraph.append(label);
+            if (item.description) {
+                const description = document.createElement('span');
+                description.className = 'source-description';
+                description.textContent = item.description;
+                paragraph.append(document.createTextNode(' '), description);
+            }
+        }
+        paragraph.dataset.items = signature;
+    }
+    const selected = new Set(data.selection || []);
+    for (const checkbox of paragraph.querySelectorAll('input')) {
+        checkbox.checked = selected.has(checkbox.value);
+    }
+    paragraph.onchange = () => {
+        const names = [...paragraph.querySelectorAll('input:checked')].map(input => input.value);
+        setStateValue('selection', names);
+    };
+    return () => { paragraph.onchange = null; };
+}
+"""
+
+def render_sources(available, descriptions, prefix):
+    component = st.components.v2.component(
+        "inventory_inline_sources", html=HTML, css=CSS, js=JS, isolate_styles=True,
+    )
+    key = prefix + "source_picker"
+    defaults = [name for name in available if st.session_state.get(prefix+"source_"+name, True)]
+    current = st.session_state.get(key, {}).get("selection", defaults)
+    if current is None:
+        current = defaults
+    current = [name for name in available if name in current]
+    language = st.session_state.get("app_language", "Português")
+    items = []
+    for name in available:
+        translation = descriptions.get(name, {})
+        description = translation.get(language, translation.get("Português", ""))
+        items.append({"name": name, "description": description})
+    result = component(
+        key=key, data={"items": items, "selection": current},
+        default={"selection": current}, on_selection_change=lambda: None,
+        width="stretch", height="content",
+    )
+    selected = result.selection if result.selection is not None else current
+    files = [name for name in available if name in selected]
+    for name in available:
+        st.session_state[prefix+"source_"+name] = name in files
+    return files
 
 CATEGORY_TYPES = {**dict(zip(CATEGORIES, ("genero", "especie", "tecnica", "forma"))),
                   "Gênero declarado": "genero", "Técnica declarada": "tecnica"}
@@ -104,15 +195,7 @@ def _source_note(kind, fields, frame):
 
 def render_analysis(kind, available, descriptions, loader, folder, translate):
     prefix = "cat_" if kind == "catalogue" else "inic_"
-    files = []
-    with st.container(key=prefix+"sources"):
-        for filename in available:
-            if st.checkbox(filename, value=True, key=prefix+"source_"+filename):
-                files.append(filename)
-            translations = descriptions.get(filename, {})
-            description = translations.get(st.session_state.get("app_language", "Português"), translations.get("Português", ""))
-            if description:
-                st.markdown(f"<div class='desc-lista'>{escape(description)}</div>", unsafe_allow_html=True)
+    files = render_sources(available, descriptions, prefix)
     st.session_state[prefix+"files"] = files
     _reset(prefix, tuple(sorted(files)))
     if not files:
