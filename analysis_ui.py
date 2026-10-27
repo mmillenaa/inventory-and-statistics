@@ -147,12 +147,39 @@ def _reset(prefix, signature):
 
 
 def _sync_filters(frame, fields, prefix, preferred=None):
-    searched = search_records(frame, st.session_state.get(prefix + "search", ""))
-    selected = {field: st.session_state.get(prefix + field, []) for field in fields}
-    valid = reconcile_filters(searched, fields, selected, preferred)
+    searched = search_records(
+        frame, st.session_state.get(prefix + "search", "")
+    )
+
+    selected = {
+        field: list(st.session_state.get(prefix + field, []))
+        for field in fields
+    }
+
+    # Selecionar todas as opções não deve excluir valores vazios.
+    for field in fields:
+        available = set(category_options(searched, field))
+
+        if available and available.issubset(set(selected[field])):
+            selected[field] = []
+
+    # Considera também listas reduzidas pelos demais filtros.
+    if preferred in fields:
+        available = set(
+            faceted_options(searched, fields, selected)[preferred]
+        )
+
+        if available and available.issubset(set(selected[preferred])):
+            selected[preferred] = []
+
+    valid = reconcile_filters(
+        searched, fields, selected, preferred
+    )
+
     for field in fields:
         key = prefix + field
-        if selected[field] != valid[field] or key not in st.session_state:
+
+        if key not in st.session_state or st.session_state[key] != valid[field]:
             st.session_state[key] = valid[field]
 
 
