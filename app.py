@@ -1014,7 +1014,7 @@ html_arvore = """
 <summary><strong>Série: Produções audiovisuais <span class="sigla-codigo">(FILMES/NOTICIAS)</span></strong></summary>
 <details>
 <summary>Subsérie: Penitenciária do Estado em 1928</summary>
-<div class="item-simples"><span class="status-badge bg-amarelo">🔵 Pronta e autorizada para uso em futuras bases de dados.</span></div>
+<div class="item-simples"><span class="status-badge bg-azul">🔵 Pronta para uso em futuras bases de dados.</span></div>
 <div class="item-simples"><span class="tag-azul">BR-SPCARANDIRU_FILMES-CSDTCARANDIRU.xlsx</span></div>
 </details>
 <details>
