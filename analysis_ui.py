@@ -220,7 +220,94 @@ def _source_note(kind, fields, frame):
         st.caption(f"Campos de origem: {labels}, nas abas de descrição documental das planilhas selecionadas.")
     else:
         st.caption(f"Campos de origem: {labels}, na aba Geral das planilhas de mapeamento selecionadas.")
+def texto_controle(pt, en, es):
+    idioma = st.session_state.get("app_language", "Português")
 
+    return {
+        "Português": pt,
+        "English": en,
+        "Español": es,
+    }.get(idioma, pt)
+
+
+def multiselect_traduzido(
+    label,
+    options,
+    *,
+    key,
+    format_func=str,
+    on_change=None,
+    args=None,
+    kwargs=None,
+    **config,
+):
+    options = list(options)
+    todos = "__ui_selecionar_todos__"
+
+    # Os filtros usam seleção vazia para representar ausência de restrição.
+    filtro_categorial = key in {
+        "cat_Gênero documental",
+        "cat_Espécie/Tipo documental",
+        "cat_Técnica de registro",
+        "cat_Forma documental",
+        "inic_Nome da iniciativa",
+        "inic_Intervenção",
+        "inic_Abrangência",
+        "inic_Modalidade",
+    }
+
+    if not options:
+        st.text_input(
+            label,
+            value="",
+            placeholder=texto_controle(
+                "Nenhuma opção disponível neste recorte",
+                "No options available for this selection",
+                "No hay opciones disponibles para esta selección",
+            ),
+            disabled=True,
+            key=key + "__sem_opcoes",
+        )
+        return []
+
+    def ao_mudar():
+        selecionados = list(st.session_state.get(key, []))
+
+        if todos in selecionados:
+            st.session_state[key] = (
+                [] if filtro_categorial else list(options)
+            )
+
+        if callable(on_change):
+            on_change(*(args or ()), **(kwargs or {}))
+
+    def rotulo(valor):
+        if valor == todos:
+            return texto_controle(
+                "Selecionar todos",
+                "Select all",
+                "Seleccionar todos",
+            )
+
+        return format_func(valor)
+
+    config.pop("placeholder", None)
+    config.pop("select_all", None)
+
+    return st.multiselect(
+        label,
+        [todos, *options],
+        key=key,
+        format_func=rotulo,
+        placeholder=texto_controle(
+            "Selecione opções",
+            "Choose options",
+            "Seleccione opciones",
+        ),
+        select_all=False,
+        on_change=ao_mudar,
+        **config,
+    )
 
 def render_analysis(kind, available, descriptions, loader, folder, translate):
     prefix = "cat_" if kind == "catalogue" else "inic_"
@@ -249,7 +336,7 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
     for column, field in zip(st.columns(4), fields):
         with column:
             options = options_by_field[field]
-            st.multiselect(translate(field), options, key=prefix+field,
+            multiselect_traduzido(translate(field), options, key=prefix+field,
                            format_func=(lambda value, field=field: category_label(value, field, True)) if kind == "catalogue" else str,
                            on_change=_sync_filters, args=(frame, fields, prefix, field),
                            disabled=not options,
@@ -309,7 +396,7 @@ def render_analysis(kind, available, descriptions, loader, folder, translate):
         key = prefix+"cloud_fields"
         if key in st.session_state:
             st.session_state[key] = [field for field in st.session_state[key] if field in options]
-        chosen = st.multiselect("O que deve conter?", options, default=[f for f in defaults if f in options] if key not in st.session_state else None, key=key, format_func=lambda field: FIELD_NAMES.get(field, field))
+        chosen = multiselect_traduzido("O que deve conter?", options, default=[f for f in defaults if f in options] if key not in st.session_state else None, key=key, format_func=lambda field: FIELD_NAMES.get(field, field))
         _source_note(kind, chosen, filtered)
         combined, detail = phrase_frequency(labeled_fields(filtered, chosen), chosen)
         st.caption("Frequência somada nos campos selecionados. Vírgulas separam termos; espaços preservam nomes e expressões completas.")
